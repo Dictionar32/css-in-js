@@ -1,0 +1,29 @@
+{
+  "name": "frontend-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "npm install --ignore-scripts && npx tsc --noEmit && npx next build"
+  },
+  "dependencies": {
+    "next": "16.2.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-styled-v4": "file:../.."
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.0",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}
