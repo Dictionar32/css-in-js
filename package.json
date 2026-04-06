@@ -207,7 +207,9 @@
     "schemas:check": "tsx scripts/generate-json-schemas.ts --check",
     "build:fast": "npm run build:packages && tsup --config tsup.config.ts",
     "validate": "tsx scripts/validate/final-report.ts",
-    "validate:json": "tsx scripts/validate/final-report.ts --json"
+    "validate:json": "tsx scripts/validate/final-report.ts --json",
+    "validate:final": "tsx scripts/validate/final-report.ts",
+    "health:summary": "tsx scripts/validate/health-summary.ts"
   },
   "peerDependencies": {
     "react": ">=18",

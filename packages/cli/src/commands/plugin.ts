@@ -1,7 +1,7 @@
 import { CliUsageError } from "../utils/errors"
 import { writeJsonSuccess } from "../utils/json"
 import { npmCommandName, runCommand, runCommandAsJson } from "../utils/process"
-import { loadRegistry, resolveScript, validatePackageName } from "./helpers"
+import { buildScriptCommand, loadRegistry, resolveScript, validatePackageName } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 export const pluginCommand: CommandDefinition = {
@@ -12,10 +12,11 @@ export const pluginCommand: CommandDefinition = {
 
     if (subcommand === "update-check") {
       const script = await resolveScript(context, "packages/plugin-registry/dist/cli.js")
+      const command = buildScriptCommand(script, ["update-check"])
       if (context.json) {
-        await runCommandAsJson("plugin.update-check", process.execPath, [script, "update-check"])
+        await runCommandAsJson("plugin.update-check", command.binary, command.args)
       } else {
-        await runCommand(process.execPath, [script, "update-check"])
+        await runCommand(command.binary, command.args)
       }
       return
     }
@@ -24,26 +25,24 @@ export const pluginCommand: CommandDefinition = {
       const pkgName = pluginArgs[0]
       if (!pkgName) throw new CliUsageError("Usage: tw plugin verify <package-name>")
       const script = await resolveScript(context, "packages/plugin-registry/dist/cli.js")
+      const command = buildScriptCommand(script, ["verify", pkgName])
       if (context.json) {
-        await runCommandAsJson("plugin.verify", process.execPath, [script, "verify", pkgName])
+        await runCommandAsJson("plugin.verify", command.binary, command.args)
       } else {
-        await runCommand(process.execPath, [script, "verify", pkgName])
+        await runCommand(command.binary, command.args)
       }
       return
     }
 
     if (subcommand === "marketplace" || subcommand === "publish") {
-      const script = await resolveScript(context, "scripts/v45/marketplace.mjs")
+      const script = await resolveScript(context, "scripts/v45/marketplace.ts")
       const marketplaceCommand = subcommand === "publish" ? "publish" : (pluginArgs[0] ?? "help")
       const forwarded = subcommand === "marketplace" ? pluginArgs.slice(1) : pluginArgs
+      const command = buildScriptCommand(script, [marketplaceCommand, ...forwarded])
       if (context.json) {
-        await runCommandAsJson(`plugin.${subcommand}`, process.execPath, [
-          script,
-          marketplaceCommand,
-          ...forwarded,
-        ])
+        await runCommandAsJson(`plugin.${subcommand}`, command.binary, command.args)
       } else {
-        await runCommand(process.execPath, [script, marketplaceCommand, ...forwarded])
+        await runCommand(command.binary, command.args)
       }
       return
     }

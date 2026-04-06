@@ -2,7 +2,7 @@ import { parseArgs as parseNodeArgs } from "node:util"
 
 import { CliUsageError } from "../utils/errors"
 import { runCommand } from "../utils/process"
-import { resolveScript } from "./helpers"
+import { buildScriptCommand, resolveScript } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 export const studioCommand: CommandDefinition = {
@@ -27,10 +27,15 @@ export const studioCommand: CommandDefinition = {
       typeof parsed.values.project === "string" ? parsed.values.project : process.cwd()
     const port = typeof parsed.values.port === "string" ? parsed.values.port : "3030"
     const mode = typeof parsed.values.mode === "string" ? parsed.values.mode : "web"
-    const script = await resolveScript(context, "scripts/v45/studio.mjs")
+    const script = await resolveScript(context, "scripts/v45/studio.ts")
+    const command = buildScriptCommand(script, [
+      `--project=${project}`,
+      `--port=${port}`,
+      `--mode=${mode}`,
+    ])
     await runCommand(
-      process.execPath,
-      [script, `--project=${project}`, `--port=${port}`, `--mode=${mode}`],
+      command.binary,
+      command.args,
       {
         env: { ...process.env, PORT: port },
       }

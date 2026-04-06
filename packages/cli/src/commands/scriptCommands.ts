@@ -1,8 +1,8 @@
 import { parseArgs as parseNodeArgs } from "node:util"
 
 import { CliUsageError } from "../utils/errors"
-import { runCommand, runCommandAsJson, npxCommandName } from "../utils/process"
-import { resolveScript } from "./helpers"
+import { runCommand, runCommandAsJson } from "../utils/process"
+import { buildScriptCommand, resolveScript } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 interface ScriptRunOptions {
@@ -23,17 +23,12 @@ async function runScriptCommand(
   }
 
   const script = await resolveScript(context, relativeScriptPath)
-  const commandArgs = [script, ...args]
-
-  // .ts scripts dijalankan via tsx (TypeScript runtime)
-  const isTs = script.endsWith(".ts")
-  const runner = isTs ? "tsx" : process.execPath
-  const runnerArgs = isTs ? commandArgs : commandArgs
+  const command = buildScriptCommand(script, args)
 
   if (context.json) {
-    await runCommandAsJson(commandName, runner, runnerArgs)
+    await runCommandAsJson(commandName, command.binary, command.args)
   } else {
-    await runCommand(runner, runnerArgs)
+    await runCommand(command.binary, command.args)
   }
 }
 

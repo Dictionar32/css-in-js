@@ -27,7 +27,6 @@ export interface ComponentImpact {
 }
 
 export class ImpactTracker {
-  // biome-ignore lint: reserved for future bundle analysis integration
   private bundleAnalyzer: BundleAnalyzer
   private criticalPatterns = [
     "fixed",
@@ -55,6 +54,14 @@ export class ImpactTracker {
 
   constructor() {
     this.bundleAnalyzer = new BundleAnalyzer()
+  }
+
+  analyzeBundleClass(
+    className: string,
+    scanResult: ScanWorkspaceResult,
+    css: string
+  ): BundleAnalysisResult {
+    return this.bundleAnalyzer.analyzeClass(className, scanResult, css)
   }
 
   calculateImpact(

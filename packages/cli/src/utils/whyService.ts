@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { compileCssFromClasses } from "@tailwind-styled/compiler/internal"
-import { BundleAnalyzer, ImpactTracker, ReverseLookup } from "@tailwind-styled/engine/internal"
+import { ImpactTracker, ReverseLookup } from "@tailwind-styled/engine/internal"
 import { scanWorkspace } from "@tailwind-styled/scanner"
 
 export interface WhyResult {
@@ -151,8 +151,8 @@ export async function whyClass(className: string, options?: { root?: string }): 
     )
   }
 
-  const bundleAnalyzer = new BundleAnalyzer()
-  const bundleAnalysis = bundleAnalyzer.analyzeClass(className, scanResult, css)
+  const impactTracker = new ImpactTracker()
+  const bundleAnalysis = impactTracker.analyzeBundleClass(className, scanResult, css)
 
   const classInCss = css.includes(`.${className}`) || css.includes(`.${className}:`)
   if (!classInCss) {
@@ -162,7 +162,6 @@ export async function whyClass(className: string, options?: { root?: string }): 
     )
   }
 
-  const impactTracker = new ImpactTracker()
   const impactReport = impactTracker.calculateImpact(className, bundleAnalysis, scanResult)
 
   const reverseLookup = new ReverseLookup()

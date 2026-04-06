@@ -1,6 +1,6 @@
 import { CliUsageError } from "../utils/errors"
 import { runCommand, runCommandAsJson } from "../utils/process"
-import { resolveScript } from "./helpers"
+import { buildScriptCommand, resolveScript } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 export const registryCommand: CommandDefinition = {
@@ -15,13 +15,13 @@ export const registryCommand: CommandDefinition = {
     const isTarball = ["publish", "install", "versions"].includes(sub)
     const script = await resolveScript(
       context,
-      isTarball ? "scripts/v45/registry-tarball.mjs" : "scripts/v45/registry.mjs"
+      isTarball ? "scripts/v45/registry-tarball.ts" : "scripts/v45/registry.ts"
     )
-    const commandArgs = [script, sub, ...args.slice(1)]
+    const command = buildScriptCommand(script, [sub, ...args.slice(1)])
     if (context.json) {
-      await runCommandAsJson(`registry.${sub}`, process.execPath, commandArgs)
+      await runCommandAsJson(`registry.${sub}`, command.binary, command.args)
     } else {
-      await runCommand(process.execPath, commandArgs)
+      await runCommand(command.binary, command.args)
     }
   },
 }
@@ -29,12 +29,12 @@ export const registryCommand: CommandDefinition = {
 export const installRegistryCommand: CommandDefinition = {
   name: "install",
   async run(args, context) {
-    const script = await resolveScript(context, "scripts/v45/registry-tarball.mjs")
-    const commandArgs = [script, "install", ...args]
+    const script = await resolveScript(context, "scripts/v45/registry-tarball.ts")
+    const command = buildScriptCommand(script, ["install", ...args])
     if (context.json) {
-      await runCommandAsJson("registry.install", process.execPath, commandArgs)
+      await runCommandAsJson("registry.install", command.binary, command.args)
     } else {
-      await runCommand(process.execPath, commandArgs)
+      await runCommand(command.binary, command.args)
     }
   },
 }

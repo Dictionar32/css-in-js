@@ -4,7 +4,7 @@ import { CliUsageError } from "../utils/errors"
 import { pathExists, readJsonSafe } from "../utils/fs"
 import { writeJsonSuccess } from "../utils/json"
 import { codeCommandName, npmCommandName, runCommand } from "../utils/process"
-import { resolveScript } from "./helpers"
+import { buildScriptCommand, resolveScript } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 const testCommand: CommandDefinition = {
@@ -28,8 +28,9 @@ const aiCommand: CommandDefinition = {
   async run(args, context) {
     const prompt = args.join(" ").trim()
     if (!prompt) throw new CliUsageError('Usage: tw ai "describe component"')
-    const script = await resolveScript(context, "scripts/v45/ai.mjs")
-    await runCommand(process.execPath, [script, prompt])
+    const script = await resolveScript(context, "scripts/v45/ai.ts")
+    const command = buildScriptCommand(script, [prompt])
+    await runCommand(command.binary, command.args)
   },
 }
 

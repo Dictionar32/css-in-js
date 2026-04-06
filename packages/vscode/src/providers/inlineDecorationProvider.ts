@@ -130,8 +130,17 @@ function debounceUpdate(document: vscode.TextDocument, engineService: EngineServ
   }, DEBOUNCE_DELAY)
 }
 
-export function createInlineDecorationProvider(engineService: EngineService): void {
-  const _changeListener = vscode.workspace.onDidChangeTextDocument(
+function disposeDocumentDecorations(documentUri: string): void {
+  const active = activeDecorations[documentUri]
+  if (!active) return
+  for (const disposable of active.disposables) {
+    disposable.dispose()
+  }
+  delete activeDecorations[documentUri]
+}
+
+export function createInlineDecorationProvider(engineService: EngineService): vscode.Disposable[] {
+  const changeListener = vscode.workspace.onDidChangeTextDocument(
     (event: vscode.TextDocumentChangeEvent) => {
       try {
         const document = event.document
@@ -171,7 +180,7 @@ export function createInlineDecorationProvider(engineService: EngineService): vo
     }
   )
 
-  const _visibleTextEditorsChangeListener = vscode.window.onDidChangeVisibleTextEditors(
+  const visibleTextEditorsChangeListener = vscode.window.onDidChangeVisibleTextEditors(
     (editors: readonly vscode.TextEditor[]) => {
       try {
         for (const editor of editors) {
@@ -200,6 +209,20 @@ export function createInlineDecorationProvider(engineService: EngineService): vo
     }
   )
 
+  const closeListener = vscode.workspace.onDidCloseTextDocument((document) => {
+    disposeDocumentDecorations(document.uri.toString())
+  })
+
+  const cleanup = new vscode.Disposable(() => {
+    if (_state.debounceTimer) {
+      clearTimeout(_state.debounceTimer)
+      _state.debounceTimer = null
+    }
+    for (const key of Object.keys(activeDecorations)) {
+      disposeDocumentDecorations(key)
+    }
+  })
+
   const initialEditors = vscode.window.visibleTextEditors
   for (const editor of initialEditors) {
     const document = editor.document
@@ -221,4 +244,6 @@ export function createInlineDecorationProvider(engineService: EngineService): vo
       }
     }
   }
+
+  return [changeListener, visibleTextEditorsChangeListener, closeListener, cleanup]
 }

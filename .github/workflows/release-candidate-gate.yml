@@ -42,18 +42,18 @@ jobs:
         run: npm run check
       
       - name: Smoke tests
-        run: node scripts/smoke/index.mjs
+        run: npx tsx scripts/smoke/index.ts
         env:
           SMOKE_VERBOSE: "1"
       
       - name: Final validation
-        run: node scripts/validate/final-report.mjs
+        run: npx tsx scripts/validate/final-report.ts
       
       - name: Health summary
-        run: node scripts/validate/health-summary.mjs
+        run: npx tsx scripts/validate/health-summary.ts
       
       - name: Sprint benchmark (100 files)
-        run: node scripts/benchmark/sprint2-bench.mjs --files=100
+        run: npx tsx scripts/benchmark/sprint2-bench.ts --files=100
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

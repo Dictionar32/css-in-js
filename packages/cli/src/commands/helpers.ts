@@ -1,4 +1,6 @@
-import fs from "node:fs/promises"
+import fs from "node:fs"
+import fsp from "node:fs/promises"
+import { createRequire } from "node:module"
 import path from "node:path"
 
 import { CliUsageError } from "../utils/errors"
@@ -39,13 +41,70 @@ export async function resolveScript(
   context: CommandContext,
   relativeToRepoRoot: string
 ): Promise<string> {
-  const fromRuntime = await resolveMonorepoPath(context.runtimeDir, relativeToRepoRoot)
-  const fromCwd = path.resolve(process.cwd(), relativeToRepoRoot)
-  const resolved = await firstExistingPath([fromRuntime, fromCwd])
+  const relativeCandidates = buildRelativeCandidates(relativeToRepoRoot)
+  const absoluteCandidates: string[] = []
+
+  for (const relativeCandidate of relativeCandidates) {
+    const fromRuntime = await resolveMonorepoPath(context.runtimeDir, relativeCandidate)
+    const fromCwd = path.resolve(process.cwd(), relativeCandidate)
+    absoluteCandidates.push(fromRuntime, fromCwd)
+  }
+
+  const resolved = await firstExistingPath(absoluteCandidates)
   if (!resolved) {
     throw new CliUsageError(`Required script not found: ${relativeToRepoRoot}`)
   }
   return resolved
+}
+
+interface ScriptCommand {
+  binary: string
+  args: string[]
+}
+
+function buildRelativeCandidates(relativeToRepoRoot: string): string[] {
+  const normalized = relativeToRepoRoot.trim()
+  if (!normalized) return [relativeToRepoRoot]
+
+  const candidates = [normalized]
+  if (normalized.endsWith(".mjs")) {
+    candidates.push(normalized.replace(/\.mjs$/u, ".ts"))
+  } else if (normalized.endsWith(".ts")) {
+    candidates.push(normalized.replace(/\.ts$/u, ".mjs"))
+  }
+  return Array.from(new Set(candidates))
+}
+
+export function buildScriptCommand(scriptPath: string, scriptArgs: string[] = []): ScriptCommand {
+  const isTypeScriptEntry =
+    scriptPath.endsWith(".ts") || scriptPath.endsWith(".tsx") || scriptPath.endsWith(".mts")
+
+  if (isTypeScriptEntry) {
+    const requireFromHere = createRequire(import.meta.url)
+    try {
+      const tsxCliPath = requireFromHere.resolve("tsx/dist/cli.mjs")
+      return {
+        binary: process.execPath,
+        args: [tsxCliPath, scriptPath, ...scriptArgs],
+      }
+    } catch {
+      const mjsFallbackPath = scriptPath.replace(/\.(?:ts|tsx|mts)$/u, ".mjs")
+      if (fs.existsSync(mjsFallbackPath)) {
+        return {
+          binary: process.execPath,
+          args: [mjsFallbackPath, ...scriptArgs],
+        }
+      }
+      throw new CliUsageError(
+        `TypeScript runtime unavailable for script: ${scriptPath}. Install 'tsx' or provide an .mjs fallback.`
+      )
+    }
+  }
+
+  return {
+    binary: process.execPath,
+    args: [scriptPath, ...scriptArgs],
+  }
 }
 
 export async function loadRegistry(context: CommandContext): Promise<PluginInfo[]> {
@@ -63,7 +122,7 @@ export async function loadRegistry(context: CommandContext): Promise<PluginInfo[
     throw new CliUsageError("Plugin registry file not found.")
   }
 
-  const raw = await fs.readFile(registryPath, "utf8")
+  const raw = await fsp.readFile(registryPath, "utf8")
   const data = JSON.parse(raw) as { official: PluginInfo[]; community: PluginInfo[] }
   return [
     ...data.official.map((item) => ({ ...item, official: true })),

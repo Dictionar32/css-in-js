@@ -1,6 +1,6 @@
 import { CliUsageError } from "../utils/errors"
 import { runCommand, runCommandAsJson } from "../utils/process"
-import { resolveScript } from "./helpers"
+import { buildScriptCommand, resolveScript } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 export const syncCommand: CommandDefinition = {
@@ -27,23 +27,23 @@ export const syncCommand: CommandDefinition = {
       )
       const script = await resolveScript(
         context,
-        isMulti ? "scripts/v45/figma-multi.mjs" : "scripts/v45/figma-sync.mjs"
+        isMulti ? "scripts/v45/figma-multi.ts" : "scripts/v45/figma-sync.ts"
       )
-      const commandArgs = [script, figmaAction, ...args.slice(2)]
+      const command = buildScriptCommand(script, [figmaAction, ...args.slice(2)])
       if (context.json) {
-        await runCommandAsJson(`sync.figma.${figmaAction}`, process.execPath, commandArgs)
+        await runCommandAsJson(`sync.figma.${figmaAction}`, command.binary, command.args)
       } else {
-        await runCommand(process.execPath, commandArgs)
+        await runCommand(command.binary, command.args)
       }
       return
     }
 
-    const script = await resolveScript(context, "scripts/v45/sync.mjs")
-    const commandArgs = [script, ...args]
+    const script = await resolveScript(context, "scripts/v45/sync.ts")
+    const command = buildScriptCommand(script, [...args])
     if (context.json) {
-      await runCommandAsJson(`sync.${syncCmd}`, process.execPath, commandArgs)
+      await runCommandAsJson(`sync.${syncCmd}`, command.binary, command.args)
     } else {
-      await runCommand(process.execPath, commandArgs)
+      await runCommand(command.binary, command.args)
     }
   },
 }

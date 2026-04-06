@@ -3,7 +3,7 @@ import { parseArgs as parseNodeArgs } from "node:util"
 import { CliUsageError } from "../utils/errors"
 import { pathExists } from "../utils/fs"
 import { npmCommandName, runCommand } from "../utils/process"
-import { resolveScript } from "./helpers"
+import { buildScriptCommand, resolveScript } from "./helpers"
 import type { CommandDefinition } from "./types"
 
 export const dashboardCommand: CommandDefinition = {
@@ -25,11 +25,12 @@ export const dashboardCommand: CommandDefinition = {
     })
     const port =
       typeof parsed.values.port === "string" ? parsed.values.port : (process.env.PORT ?? "3000")
-    const serverScript = await resolveScript(context, "packages/dashboard/src/server.mjs")
+    const serverScript = await resolveScript(context, "packages/dashboard/src/server.ts")
 
     if (await pathExists(serverScript)) {
       context.output.writeText(`[tw dashboard] Starting on http://localhost:${port}`)
-      await runCommand(process.execPath, [serverScript], {
+      const command = buildScriptCommand(serverScript)
+      await runCommand(command.binary, command.args, {
         env: { ...process.env, PORT: port },
       })
       return
