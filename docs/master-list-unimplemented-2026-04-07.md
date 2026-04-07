@@ -33,6 +33,7 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - `PLAN Wave 3+` (Cross-package adoption) → jalur yang sebelumnya masih `throw new Error` di VSCode rename provider + Studio Desktop engine loader kini sudah pakai typed error class (`RenameProviderError` / `StudioError`), sehingga lintas package tidak lagi memakai raw throw.
 - `PLAN Wave 3++` (hardening) → dua jalur typed error lintas package (`RenameProviderError`, `StudioError`) sekarang punya unit test dedicated (`renameProviderError.test.ts`, `studioError.test.js`) agar regressions lebih cepat ketangkap.
 - `PLAN Wave 1` (Rust→TS auto-sync foundation) → binary `export-schemas` tersedia di `native/src/bin/export-schemas.rs`, direktori `native/json-schemas/` terisi baseline schema JSON, generator `scripts/generate-json-schemas.ts` menghasilkan modul typed ke `packages/shared/src/generated/`, dan gate otomatis `npm run wave1:gate` + `npm run stability:cross-package` sudah aktif.
+- `PLAN Wave 2` (Consumer/Export Readiness) → gate baru `npm run wave2:gate` + test `scripts/wave2/export-compat.test.mjs` sekarang memverifikasi root/subpath exports tetap dual-mode (`import` + `require`) selama compatibility window masih dibuka, dan gate ini sudah diikutkan ke aggregate `npm run stability:cross-package`.
 
 > Catatan: yang belum stabil penuh tetap tercantum di section BROKEN/PARTIAL/BELUM DIMULAI di bawah.
 
@@ -104,10 +105,15 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - `native/json-schemas/` sudah ada dan terisi baseline schema
 - Pipeline end-to-end `cargo run --bin export-schemas → generate-json-schemas → packages/shared/src/generated/` sekarang sudah punya gate script (`npm run wave1:gate`) dan ikut tervalidasi di aggregate stability gate (`npm run stability:cross-package`)
 
-**Wave 2 — Schema Consolidation:**
+**Wave 2A — Consumer/Export Readiness:** ✅ **STABIL (gated)**
+- Gate `npm run wave2:gate` aktif dan tervalidasi untuk memastikan `exports` root + subpath tetap kompatibel dual-mode (`import` + `require`) via `scripts/wave2/export-compat.test.mjs`.
+- Gate Wave 2A sudah masuk aggregate stability pipeline (`npm run stability:cross-package`).
+
+**Wave 2B — Schema Consolidation:** 🟠 **BELUM STABIL**
 - 77 Zod schema belum dikonsolidasi — masih tersebar di 15+ packages
 - 4/6 consumer packages masih punya candidate list native binding sendiri, belum migrate ke `shared/src/nativeBinding.ts`
 - Progress lanjutan: `packages/compiler/src/cssCompiler.ts` kini sudah migrate ke `@tailwind-styled/shared` (`resolveNativeBindingCandidates` + `loadNativeBinding` + `TwError`) untuk mengurangi duplikasi candidate-list/error handling.
+- Progress lanjutan: `packages/compiler/src/rustCssCompiler.ts` juga sudah migrate ke helper `@tailwind-styled/shared` (`resolveRuntimeDir` + `resolveNativeBindingCandidates` + `loadNativeBinding`) sehingga candidate resolution native binding tidak lagi hardcoded lokal.
 
 **Wave 3 — Error Unification:** ✅ **STABIL (lintas package)**
 - `TwError` + mapper `fromRust/fromZod` tersentralisasi di `packages/shared/src/errors.ts`
@@ -116,13 +122,18 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - Baseline test otomatis aktif di `packages/shared/src/errors.test.ts` (`npm -w packages/shared test`)
 - Jalur VSCode + Studio Desktop yang sebelumnya raw throw kini sudah typed error (bukan `throw new Error(...)`)
 
-**Wave 4 — Auto-Sync Pipeline:**
-- CI step diff check schema belum ada
-- `napi-rs` upgrade v2 → v3 belum dilakukan
-- Auto-generate `.d.ts` dari Rust struct belum ada
+**Wave 4A — Schema Drift Gate:** ✅ **STABIL (gated)**
+- ✅ Gate `npm run wave4:schema-drift` aktif untuk verifikasi drift Rust→TS schema.
+- ✅ Gate Wave 4A dijalankan di CI (`.github/workflows/quality.yml`) dan sudah masuk aggregate pipeline `npm run stability:cross-package`.
+
+**Wave 4B — Auto-Sync Completion:** ✅ **STABIL**
+- `napi-rs` migration v2 → v3 sudah diterapkan (`napi = "3"`, `napi-derive = "3"`, `napi-build = "2"` di `native/Cargo.toml`).
+- Auto-generated type declarations sudah ada via `packages/shared/src/generated/rust-schema-types.d.ts` (dihasilkan oleh `scripts/generate-json-schemas.ts`).
+- `wave1:export-schemas` sekarang memakai launcher `scripts/wave1/export-schemas.mjs` yang memprioritaskan binary lokal (`native/target/debug/export-schemas`) sebelum fallback ke `cargo run`, sehingga gate tetap stabil di environment terbatas.
+- **Verdict saat ini:** Wave 4 stabil untuk scope gate + auto-sync baseline.
 
 ### B. ESM Migration — 34 unchecked items (3 wave penuh)
-Seluruh Wave 1 (audit CJS assumptions di 6 packages), Wave 2 (consumer compatibility tests), Wave 3 (ESM-only cutover) belum dimulai. `createRequire` fallbacks masih tersebar.
+Progress terbaru: Wave 2 (consumer compatibility tests) sekarang berlabel ✅ **STABIL (gated)** lewat `npm run wave2:gate` (`scripts/wave2/export-compat.test.mjs`) dan sudah ikut aggregate stability pipeline. Wave 1 (audit CJS assumptions di 6 packages) dan Wave 3 (ESM-only cutover) masih belum dimulai penuh. `createRequire` fallbacks masih tersebar.
 
 ### C. Monorepo Checklist — 41 unchecked items
 Facade `scanWorkspace/analyzeWorkspace/build/generateSafelist` di engine belum distabilkan. Smoke test per adapter (vite/next/rspack), artifact assertions, plugin starter template, shared observability contract lintas CLI/dashboard/devtools semua belum.

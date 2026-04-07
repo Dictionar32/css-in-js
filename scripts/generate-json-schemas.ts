@@ -28,6 +28,7 @@ const SCHEMA_INPUT_DIR = path.resolve(ROOT, "native", "json-schemas")
 const GENERATED_DIR = path.resolve(ROOT, "packages", "shared", "src", "generated")
 const HEADER = "/* Auto-generated from Rust JSON Schema — do not edit manually */\n"
 const INDEX_PATH = path.join(GENERATED_DIR, "index.ts")
+const TYPES_DTS_PATH = path.join(GENERATED_DIR, "rust-schema-types.d.ts")
 
 const CHECK_MODE = process.argv.includes("--check")
 const PLACEHOLDER_SOURCE = [
@@ -38,6 +39,8 @@ const PLACEHOLDER_SOURCE = [
   "export {}",
   "",
 ].join("\n")
+
+const PLACEHOLDER_DTS_SOURCE = [HEADER.trimEnd(), "", "export {}", ""].join("\n")
 
 const UNSUPPORTED_ROOT_KEYS = [
   "$comment",
@@ -207,10 +210,16 @@ function main() {
         console.error(`DRIFT: ${INDEX_PATH} differs from placeholder output`)
         process.exit(1)
       }
+      const currentDts = fs.existsSync(TYPES_DTS_PATH) ? fs.readFileSync(TYPES_DTS_PATH, "utf-8") : ""
+      if (currentDts !== PLACEHOLDER_DTS_SOURCE) {
+        console.error(`DRIFT: ${TYPES_DTS_PATH} differs from placeholder output`)
+        process.exit(1)
+      }
       console.log("Placeholder index is up to date.")
       return
     }
     fs.writeFileSync(INDEX_PATH, PLACEHOLDER_SOURCE, "utf-8")
+    fs.writeFileSync(TYPES_DTS_PATH, PLACEHOLDER_DTS_SOURCE, "utf-8")
     return
   }
 
@@ -234,6 +243,7 @@ function main() {
   let changed = 0
   let unchanged = 0
   const indexExports: string[] = []
+  const dtsTypeExports: string[] = []
   const expectedSchemaFiles = new Set<string>()
 
   for (const file of schemaFiles) {
@@ -247,6 +257,7 @@ function main() {
     const outPath = path.join(GENERATED_DIR, `${name}.schema.ts`)
     expectedSchemaFiles.add(path.basename(outPath))
     indexExports.push(`export * from "./${name}.schema"`)
+    dtsTypeExports.push(`export type { ${name} } from "./${name}.schema"`)
 
     if (CHECK_MODE) {
       if (fs.existsSync(outPath)) {
@@ -282,6 +293,12 @@ function main() {
       console.error(`DRIFT: ${INDEX_PATH} differs from generated output`)
       changed++
     }
+    const expectedTypesDts = [HEADER.trimEnd(), "", ...dtsTypeExports.sort(), ""].join("\n")
+    const currentTypesDts = fs.existsSync(TYPES_DTS_PATH) ? fs.readFileSync(TYPES_DTS_PATH, "utf-8") : ""
+    if (currentTypesDts !== expectedTypesDts) {
+      console.error(`DRIFT: ${TYPES_DTS_PATH} differs from generated output`)
+      changed++
+    }
 
     if (changed > 0) {
       console.error(`\n${changed} schema(s) are out of sync. Run: node scripts/generate-json-schemas.ts`)
@@ -301,6 +318,9 @@ function main() {
     const indexSource = [HEADER.trimEnd(), "", ...indexExports.sort(), ""].join("\n")
     fs.writeFileSync(INDEX_PATH, indexSource, "utf-8")
     console.log(`Generated: ${INDEX_PATH}`)
+    const dtsSource = [HEADER.trimEnd(), "", ...dtsTypeExports.sort(), ""].join("\n")
+    fs.writeFileSync(TYPES_DTS_PATH, dtsSource, "utf-8")
+    console.log(`Generated: ${TYPES_DTS_PATH}`)
   }
 }
 

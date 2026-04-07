@@ -10,8 +10,8 @@ description = "Native Rust engine for tailwind-styled-v5"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = { version = "2", features = ["napi4"] }
-napi-derive = "2"
+napi = { version = "3", features = ["napi4"] }
+napi-derive = "3"
 # Regex engine — used for class tokenisation, tw detection, RSC analysis
 regex = "1"
 # Once-cell for lazy static regex compilation (avoid recompiling on every call)
@@ -31,7 +31,7 @@ serde_json = "1"
 schemars = "0.8"
 
 [build-dependencies]
-napi-build = "1"
+napi-build = "2"
 
 [profile.release]
 # Optimise for size, strip debug symbols

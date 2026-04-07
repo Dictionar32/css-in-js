@@ -2,19 +2,13 @@
  * Rust-backed CSS compiler and AST extractor bridge.
  */
 
-import { createRequire } from "node:module"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-import { TwError } from "@tailwind-styled/shared"
+import {
+  TwError,
+  loadNativeBinding,
+  resolveNativeBindingCandidates,
+  resolveRuntimeDir,
+} from "@tailwind-styled/shared"
 import { CssCompileResultSchema } from "./schemas"
-
-const getDirname = (): string => {
-  if (typeof __dirname !== "undefined") return __dirname
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
 
 interface NativeCompilerBinding {
   compileCss?: (
@@ -49,35 +43,33 @@ const createCompilerBindingLoader = () => {
 
   const loadBinding = (): NativeCompilerBinding => {
     if (bindingState.current !== undefined) {
-    if (bindingState.current === null) {
-      throw new TwError(
-        "rust",
-        "NATIVE_CSS_BINDING_UNAVAILABLE",
-        `[tailwind-styled/compiler v5] Native CSS binding is required but not available.\n` +
-          `Please ensure the native module is properly built.`
-      )
+      if (bindingState.current === null) {
+        throw new TwError(
+          "rust",
+          "NATIVE_CSS_BINDING_UNAVAILABLE",
+          `[tailwind-styled/compiler v5] Native CSS binding is required but not available.\n` +
+            `Please ensure the native module is properly built.`
+        )
       }
       return bindingState.current
     }
 
-    const req = createRequire(import.meta.url)
-    const currentDir = getDirname()
-    const candidates = [
-      path.resolve(process.cwd(), "native", "tailwind_styled_parser.node"),
-      path.resolve(currentDir, "..", "..", "..", "native", "tailwind_styled_parser.node"),
-      path.resolve(currentDir, "..", "..", "..", "..", "native", "tailwind_styled_parser.node"),
-    ]
+    const runtimeDir = resolveRuntimeDir(undefined, import.meta.url)
+    const candidates = resolveNativeBindingCandidates({
+      runtimeDir,
+      envVarNames: ["TAILWIND_STYLED_NATIVE_PATH"],
+    })
+    const loaded = loadNativeBinding<NativeCompilerBinding>({
+      runtimeDir,
+      candidates,
+      isValid: (module: unknown): module is NativeCompilerBinding =>
+        !!module && typeof (module as Partial<NativeCompilerBinding>).compileCss === "function",
+      invalidExportMessage: "native module does not expose compileCss",
+    })
 
-    for (const candidate of candidates) {
-      try {
-        const mod = req(candidate) as NativeCompilerBinding
-        if (mod?.compileCss) {
-          bindingState.current = mod
-          return bindingState.current
-        }
-      } catch {
-        /* try next */
-      }
+    if (loaded.binding) {
+      bindingState.current = loaded.binding
+      return bindingState.current
     }
 
     bindingState.current = null

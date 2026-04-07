@@ -209,14 +209,17 @@
     "version:sync": "tsx scripts/version-sync.ts",
     "schemas:generate": "tsx scripts/generate-json-schemas.ts",
     "schemas:check": "tsx scripts/generate-json-schemas.ts --check",
-    "wave1:export-schemas": "cargo run --manifest-path native/Cargo.toml --bin export-schemas",
+    "wave1:export-schemas": "node scripts/wave1/export-schemas.mjs",
     "wave1:gate": "npm run wave1:export-schemas && npm run schemas:generate && npm run schemas:check && npm -w packages/shared run check",
-    "stability:cross-package": "npm -w packages/shared test && npm -w packages/shared run check && npm -w packages/vscode test && npm -w packages/vscode run check && npm -w packages/studio-desktop test && npm -w packages/studio-desktop run check && npm run wave1:gate",
+    "stability:cross-package": "npm -w packages/shared test && npm -w packages/shared run check && npm -w packages/vscode test && npm -w packages/vscode run check && npm -w packages/studio-desktop test && npm -w packages/studio-desktop run check && npm run wave1:gate && npm run wave2:gate && npm run wave4:schema-drift",
     "build:fast": "npm run build:packages && tsup --config tsup.config.ts",
     "validate": "tsx scripts/validate/final-report.ts",
     "validate:json": "tsx scripts/validate/final-report.ts --json",
     "validate:final": "tsx scripts/validate/final-report.ts",
-    "health:summary": "tsx scripts/validate/health-summary.ts"
+    "health:summary": "tsx scripts/validate/health-summary.ts",
+    "test:wave2:exports": "node --test scripts/wave2/export-compat.test.mjs",
+    "wave2:gate": "npm run test:wave2:exports",
+    "wave4:schema-drift": "npm run wave1:export-schemas && npm run schemas:check"
   },
   "peerDependencies": {
     "react": ">=18",

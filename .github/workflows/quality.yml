@@ -28,6 +28,9 @@ jobs:
       
       - name: Build Rust native bindings
         run: npm run build:rust
+
+      - name: Wave 4 schema drift gate
+        run: npm run wave4:schema-drift
       
       - name: Verify root + example builds
         run: npm run verify:builds
