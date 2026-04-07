@@ -5230,7 +5230,7 @@ pub fn analyze_route_class_distribution(
         let exclusive: Vec<String> = classes.iter()
             .filter(|cls| {
                 route_class_sets.iter()
-                    .filter(|(r, _)| r != route)
+                    .filter(|(r, _)| **r != *route)
                     .all(|(_, other_classes)| !other_classes.contains(*cls))
             })
             .cloned()

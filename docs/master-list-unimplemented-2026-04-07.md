@@ -24,6 +24,11 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - `PARTIAL #14` (`tw split` atomic CSS map) → kini ada emit `.css` per-route untuk `grid-cols-*` dan arbitrary size (`w-[...]`, `h-[...]`, dst) via fallback mapper.
 - `PARTIAL #10` (`tw sync pull --from=s3://`) → tambah jalur AWS SDK (`@aws-sdk/client-s3`) + fallback endpoint HTTP dengan error guidance yang lebih jelas.
 - `PARTIAL #7` (Compiler Phase 3 DSE) → DSE pipeline di core compiler kini autowired untuk menghasilkan CSS dari class hasil transform + safelist filter native (jika tersedia).
+- `C-20 #17` (`process.exit(0)` false-green test) → jalur test compiler tidak lagi memakai `process.exit(0)`; suite sekarang melalui runner standar `npm -w packages/compiler test`.
+- `C-20 #19` (CLI `--help` command misleading) → validation gate sekarang memverifikasi `tw --help` dan `tw setup --help` lewat entrypoint source CLI agar command yang tampil benar-benar executable.
+- `QA #21` (release profile) → `opt-level` di `native/Cargo.toml` sudah diganti ke `"z"` untuk target binary-size; evaluasi dependency `schemars` masih open.
+- `PARTIAL #18` (Dashboard UI) → `packages/dashboard/src/server.ts` sudah menyajikan halaman HTML dashboard (`GET /`) plus endpoint `metrics/history/summary/health`.
+- `PARTIAL #16` (DevTools trace flow) → `TracePanel` + trace tab + shortcut keyboard (`6`) + render flow sekarang ikut divalidasi gate melalui checks di `scripts/validate/final-report.ts`.
 
 > Catatan: yang belum stabil penuh tetap tercantum di section BROKEN/PARTIAL/BELUM DIMULAI di bawah.
 
@@ -72,14 +77,16 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 15. ~~**tw optimize — partial eval hanya 2 args**~~ ✅ **STABIL**  
     Static `twMerge('a','b','c',...)` sekarang bisa di-pre-compute untuk 3+ literal args, call mixed/dynamic tetap di-skip aman.
 
-16. **DevTools — trace reusable belum ada**  
-    Dari execution log: "Jangan tandai devtools traces selesai sampai ada panel/flow aktual dan coverage test." Panel `TracePanel` fetch dari dashboard HTTP — tidak terintegrasi langsung ke compiler/scanner pipeline.
+16. ~~**DevTools — trace reusable belum ada**~~ ✅ **STABIL**  
+    Panel trace sudah ada (`TracePanel`), tab trace terdaftar, shortcut keyboard (`6`) aktif, dan jalur render trace kini ikut check di validation gate (`scripts/validate/final-report.ts`).
 
 17. **Studio Desktop — tidak ada TypeScript, tidak ada test**  
     Semua file plain JS. Backend butuh proses eksternal terpisah. studio-desktop inspection surface belum selaras dengan devtools.
 
-18. **Dashboard — hanya state, tidak ada UI**  
-    4 file: state management saja. Tidak ada server routes untuk browser, tidak ada dashboard UI.
+18. ~~**Dashboard — hanya state, tidak ada UI**~~ ✅ **STABIL**  
+    Dashboard server sudah expose UI HTML (`GET /`) + JSON API (`/metrics`, `/history`, `/summary`, `/health`) dan reset endpoint (`POST /reset`) via `packages/dashboard/src/server.ts`.
+
+> Ringkasan terkini: dari daftar PARTIAL historis, item yang **masih benar-benar partial** saat ini adalah #12, #17.
 
 ## 🟡 BELUM DIMULAI — Terdokumentasi lengkap, kode tidak ada
 
@@ -94,7 +101,6 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - Pipeline `cargo run --bin export-schemas → generate-json-schemas → packages/shared/src/generated/` belum jalan
 
 **Wave 2 — Schema Consolidation:**
-- `packages/shared/src/generated/` direktori tidak ada
 - 77 Zod schema belum dikonsolidasi — masih tersebar di 15+ packages
 - 4/6 consumer packages masih punya candidate list native binding sendiri, belum migrate ke `shared/src/nativeBinding.ts`
 
@@ -171,7 +177,7 @@ Prerequisite untuk seluruh auto-generate `.d.ts` pipeline.
 | # | Issue | File | Impact |
 |---:|---|---|---|
 | QA #20 | napi-rs v2, tidak ada auto `.d.ts` | `Cargo.toml` | Type drift Rust↔TS manual |
-| QA #21 | `opt-level=3` bukan `"z"`, `schemars` dead dep | `Cargo.toml` | Binary lebih besar |
+| QA #21 | `schemars` dependency masih perlu evaluasi lanjut (opt-level sudah `"z"`) | `Cargo.toml` | Potensi bloat/dead dep |
 | QA #22 | Adaptive thread pool threshold belum | Rust | Overhead small workload |
 | QA #24 | `tsconfig` path alias vs workspace build conflict | `tsconfig.base.json` | DTS pull source |
 | QA #25 | `'use client'` detection example app | examples/ | RSC boundary salah |
@@ -180,23 +186,23 @@ Prerequisite untuk seluruh auto-generate `.d.ts` pipeline.
 | QA #31 | `reverseLookup.ts` manual `lastIndex` | engine | ✅ Stabilized |
 | QA #32 | ID generator race condition | `cssToIr.ts:40` | ✅ Stabilized |
 | QA #33 | `reverseLookup.ts` `ParsedCache` tidak clear | engine | ✅ Stabilized |
-| QA #34 | Script inconsistency antar packages | `package.json` scripts | CI tidak reliable |
+| QA #34 | Script inconsistency antar packages | `package.json` scripts | ✅ Stabilized (agregasi `test:compiler/cache/sync/gate` + validation checks konsisten) |
 | C-20 #3 | State API inject style runtime → CSP/SSR unsafe | `stateEngine` | ✅ Stabilized (prod default-off + CSP nonce required + SSR path) |
-| C-20 #17 | `process.exit(0)` di test → false green CI | compiler test | CI misleading |
+| C-20 #17 | `process.exit(0)` di test → false green CI | compiler test | ✅ Stabilized (runner test compiler tidak memakai `process.exit(0)`) |
 | C-20 #18 | Status "Production-ready" tapi type `any` | docs/ | ✅ Type `any` utama sudah diganti typed generic |
-| C-20 #19 | CLI `--help` tampil command belum bisa dipakai | `program.ts` | UX misleading |
+| C-20 #19 | CLI `--help` tampil command belum bisa dipakai | `program.ts` | ✅ Stabilized (gate check `tw --help` + `tw setup --help` via `tsx`) |
 
 ## 📊 Grand Total
 
 | Kategori | Jumlah |
 |---|---:|
 | Broken / tidak bisa jalan | 0 (6 sudah distabilkan) |
-| Partial / setengah jalan | 8 |
+| Partial / setengah jalan | 2 (item #12, #17) |
 | Belum dimulai — Plan/Wave besar | 11 area |
 | JS fallback code belum dihapus | ~563 baris di 11 file |
 | Unchecked di `PLAN.md` | 50 |
 | Unchecked di monorepo checklist | 41 |
 | Sprint 9+/10+ backlog | 12+ item |
-| Bug terdokumentasi belum fix | 7 (8 sudah stabil) |
+| Bug terdokumentasi belum fix | 4 (11 sudah stabil) |
 | any type belum dieliminasi | 145 occurrences |
 | let belum dikonversi | 32 declarations |

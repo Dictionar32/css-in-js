@@ -189,6 +189,22 @@ const checks = {
       detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
     }
   })(),
+  cliHelpMain: (() => {
+    const r = run("npx tsx packages/cli/src/index.ts --help")
+    return {
+      label: "CLI help (main command)",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
+  cliHelpSetup: (() => {
+    const r = run("npx tsx packages/cli/src/index.ts setup --help")
+    return {
+      label: "CLI help (setup subcommand)",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
   // Next.js build
   nextBuild: (() => {
     const nextBuiltId = path.join(root, "examples/next-js-app/.next/BUILD_ID")
@@ -301,6 +317,26 @@ const checks = {
   cacheTestFile: checkFile(
     "scripts/v45/cache.test.mjs exists",
     path.join(root, "scripts/v45/cache.test.mjs")
+  ),
+  devtoolsTracePanel: checkContains(
+    "devtools trace panel component",
+    path.join(root, "packages/devtools/src/index.tsx"),
+    "function TracePanel()"
+  ),
+  devtoolsTraceTab: checkContains(
+    "devtools trace tab registered",
+    path.join(root, "packages/devtools/src/index.tsx"),
+    "{ id: \"trace\", label: \"Trace\", icon: \"🔬\" }"
+  ),
+  devtoolsTraceShortcut: checkContains(
+    "devtools trace keyboard shortcut",
+    path.join(root, "packages/devtools/src/index.tsx"),
+    "if (e.key === \"6\")"
+  ),
+  devtoolsTraceRenderFlow: checkContains(
+    "devtools trace panel render flow",
+    path.join(root, "packages/devtools/src/index.tsx"),
+    "state.panel === \"trace\" && React.createElement(TracePanel, null)"
   ),
 }
 

@@ -34,8 +34,8 @@ schemars = "0.8"
 napi-build = "1"
 
 [profile.release]
-# Optimise for speed, strip debug symbols
-opt-level = 3
+# Optimise for size, strip debug symbols
+opt-level = "z"
 lto = true
 strip = true
 codegen-units = 1
