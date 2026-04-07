@@ -1,13 +1,22 @@
 import fs from "node:fs"
 import path from "node:path"
+import { spawnSync } from "node:child_process"
 
 const root = process.cwd()
 const reportPath = path.join(root, "artifacts", "validation-report.json")
 const summaryPath = path.join(root, "artifacts", "health-summary.json")
 
 if (!fs.existsSync(reportPath)) {
-  console.error("validation-report.json not found. Run `npm run validate` first.")
-  process.exit(1)
+  const command = process.platform === "win32" ? "npx.cmd" : "npx"
+  const generated = spawnSync(command, ["tsx", "scripts/validate/final-report.ts", "--json"], {
+    cwd: root,
+    stdio: "inherit",
+  })
+
+  if (!fs.existsSync(reportPath)) {
+    console.error("validation-report.json not found and auto-generation failed.")
+    process.exit(1)
+  }
 }
 
 const report = JSON.parse(fs.readFileSync(reportPath, "utf8"))

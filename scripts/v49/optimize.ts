@@ -35,6 +35,30 @@ const source = fs.readFileSync(abs, 'utf8')
 let result = source
 let stats = { deduped: 0, compiled: 0, savedBytes: 0 }
 
+function foldStaticTwMergeCall(code) {
+  const twMergeStaticRe = /twMerge\(\s*(['"`])([^'"`\\]*(?:\\.[^'"`\\]*)*)\1(?:\s*,\s*(['"`])([^'"`\\]*(?:\\.[^'"`\\]*)*)\3)+\s*\)/g
+  return code.replace(twMergeStaticRe, (full) => {
+    const args = []
+    const argRe = /(['"`])([^'"`\\]*(?:\\.[^'"`\\]*)*)\1/g
+    let argMatch
+    while ((argMatch = argRe.exec(full)) !== null) {
+      args.push(argMatch[2])
+    }
+    if (args.length < 2) return full
+    const merged = []
+    const seen = new Set()
+    for (const arg of args) {
+      for (const token of arg.split(/\s+/).filter(Boolean)) {
+        if (seen.has(token)) continue
+        seen.add(token)
+        merged.push(token)
+      }
+    }
+    stats.compiled++
+    return `"${merged.join(' ')}"`
+  })
+}
+
 // 1. Dedup + sort classes via Rust parse_classes
 if (dedup && native?.parseClasses) {
   const classRe = /\btw(?:\.server)?\.(?:\w+)`([^`]*)`/g
@@ -77,6 +101,9 @@ if (args.includes('--compile') && native?.compileCss) {
     result = `// @tw-precompiled-css\n// ${JSON.stringify(cssResult.css.slice(0, 200))}...\n` + result
   }
 }
+
+// 4. Partial eval twMerge("a", "b", "c", ...)
+result = foldStaticTwMergeCall(result)
 
 const saved = source.length - result.length
 stats.savedBytes = saved

@@ -30,6 +30,7 @@ export interface StateComponentEntry {
 }
 
 const stateRegistry = new Map<string, StateComponentEntry>()
+let hasWarnedStateRuntimeInjection = false
 
 declare global {
   interface Window {
@@ -177,6 +178,21 @@ function twClassesToCss(classes: string): string {
 
 function injectStateStyles(id: string, state: StateConfig): void {
   if (typeof document === "undefined") return
+  const runtimeInjectionAllowed =
+    process.env.NODE_ENV !== "production" ||
+    process.env.TWS_STATE_RUNTIME_INJECT === "1" ||
+    process.env.TWS_STATE_RUNTIME_INJECT === "true"
+
+  if (!runtimeInjectionAllowed) {
+    if (!hasWarnedStateRuntimeInjection) {
+      hasWarnedStateRuntimeInjection = true
+      console.warn(
+        "[tailwind-styled-v4] State runtime style injection is disabled in production by default. " +
+          "Use SSR pre-generated CSS (generateStateCss) or set TWS_STATE_RUNTIME_INJECT=1 to opt in."
+      )
+    }
+    return
+  }
 
   const styleId = `tw-state-${id}`
   if (document.getElementById(styleId)) return // already injected
@@ -184,7 +200,7 @@ function injectStateStyles(id: string, state: StateConfig): void {
   const rules = Object.entries(state)
     .map(([stateName, classes]) => {
       const css = twClassesToCss(classes)
-      return css ? `.${id}[data-${stateName}="true"]{${css}}` : null
+      return css ? `.tw-state[data-tw-state-id="${id}"][data-${stateName}="true"]{${css}}` : null
     })
     .filter(Boolean) as string[]
 
@@ -215,6 +231,8 @@ function injectStateStyles(id: string, state: StateConfig): void {
 export interface StateEngineResult {
   /** CSS class to add to the component */
   stateClass: string
+  /** Deterministic id exposed as data attribute */
+  stateId: string
   /** Whether this component uses state (for SSR data attributes) */
   hasState: true
   /** List of state names (for devtools) */
@@ -244,9 +262,9 @@ export function processState(tag: string, state: StateConfig): StateEngineResult
 
   // Mark as injected
   const entry = stateRegistry.get(id)!
-  entry.cssInjected = true
+  entry.cssInjected = typeof document !== "undefined" && !!document.getElementById(`tw-state-${id}`)
 
-  return { stateClass: id, hasState: true, stateNames }
+  return { stateClass: "tw-state", stateId: id, hasState: true, stateNames }
 }
 
 /**
@@ -259,7 +277,7 @@ export function generateStateCss(tag: string, state: StateConfig): string {
   const rules = Object.entries(state)
     .map(([stateName, classes]) => {
       const css = twClassesToCss(classes)
-      return css ? `.${id}[data-${stateName}="true"]{${css}}` : null
+      return css ? `.tw-state[data-tw-state-id="${id}"][data-${stateName}="true"]{${css}}` : null
     })
     .filter(Boolean) as string[]
 

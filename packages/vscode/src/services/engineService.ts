@@ -1,6 +1,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import type { ScanWorkspaceResult } from "@tailwind-styled/scanner"
+import { scanWorkspaceAsync } from "@tailwind-styled/scanner"
 
 export interface ScanResult extends ScanWorkspaceResult {
   classNames?: ScanClassName[]
@@ -96,6 +97,45 @@ export class EngineService {
     return path.join(this.rootPath, ".tailwind-styled", "scan-cache.json")
   }
 
+  private buildClassNames(scanResult: ScanWorkspaceResult): ScanClassName[] {
+    const usageByClass = new Map<string, Set<string>>()
+    for (const file of scanResult.files) {
+      const relativePath = path.relative(this.rootPath, file.file) || file.file
+      for (const className of file.classes) {
+        if (!usageByClass.has(className)) usageByClass.set(className, new Set<string>())
+        usageByClass.get(className)?.add(relativePath)
+      }
+    }
+
+    return Array.from(usageByClass.entries())
+      .sort((left, right) => left[0].localeCompare(right[0]))
+      .map(([name, usedIn]) => ({
+        name,
+        usedIn: Array.from(usedIn).sort(),
+        rules: [],
+        finalStyle: [],
+        conflicts: [],
+      }))
+  }
+
+  private async regenerateScanCache(): Promise<ScanCache | null> {
+    if (!this.rootPath) return null
+    const scanResult = await scanWorkspaceAsync(this.rootPath)
+    const payload: ScanResult = {
+      ...scanResult,
+      classNames: this.buildClassNames(scanResult),
+    }
+    fs.mkdirSync(path.dirname(this.scanCachePath), { recursive: true })
+    fs.writeFileSync(this.scanCachePath, JSON.stringify(payload, null, 2))
+
+    const classNames = new Map<string, ScanClassName>()
+    for (const className of payload.classNames || []) {
+      classNames.set(className.name, className)
+    }
+    this.cache = { classNames, lastScan: Date.now() }
+    return this.cache
+  }
+
   private async ensureScanCache(): Promise<ScanCache | null> {
     if (this.cache && Date.now() - this.cache.lastScan < this.scanCacheExpiry) {
       return this.cache
@@ -103,7 +143,7 @@ export class EngineService {
 
     try {
       if (!fs.existsSync(this.scanCachePath)) {
-        return null
+        return await this.regenerateScanCache()
       }
 
       const content = fs.readFileSync(this.scanCachePath, "utf-8")

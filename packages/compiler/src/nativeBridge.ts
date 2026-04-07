@@ -9,6 +9,7 @@ import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import {
   createDebugLogger,
+  getNativeDisableEnvVar,
   loadNativeBinding,
   resolveNativeBindingCandidates,
   TwError,
@@ -168,13 +169,12 @@ const createBridgeLoader = () => {
       return bridgeState.current
     }
 
-    if (process.env.TWS_NO_NATIVE === "1" || process.env.TWS_NO_NATIVE === "true" ||
-        process.env.TWS_NO_RUST === "1" || process.env.TWS_NO_RUST === "true") {
+    const disabledByEnv = getNativeDisableEnvVar()
+    if (disabledByEnv) {
       bridgeState.current = null
-      const envVar = process.env.TWS_NO_NATIVE ? "TWS_NO_NATIVE" : "TWS_NO_RUST"
       throw new TwError("rust", "NATIVE_BINDING_UNAVAILABLE",
         `[tailwind-styled/compiler v5] Native binding is required but not available.\n` +
-        `The ${envVar} environment variable is set.\n` +
+        `The ${disabledByEnv} environment variable is set.\n` +
         `This package requires native Rust bindings. There is no JavaScript fallback.\n` +
         `Please ensure:\n` +
         `  1. The native module is properly installed\n` +

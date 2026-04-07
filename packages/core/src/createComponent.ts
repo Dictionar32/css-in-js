@@ -83,8 +83,8 @@ function attachExtend<P extends object>(
         key !== "animate" &&
         key !== "displayName"
       ) {
-        ;(extended as Record<string, unknown>)[key] = (
-          component as Record<string, unknown>
+        ;(extended as unknown as Record<string, unknown>)[key] = (
+          component as unknown as Record<string, unknown>
         )[key]
       }
     }
@@ -150,6 +150,9 @@ export function createComponent<P extends object = Record<string, unknown>>(
   const engineClasses = [stateResult?.stateClass, containerResult?.containerClass]
     .filter(Boolean)
     .join(" ")
+  const stateAttributes = stateResult
+    ? ({ "data-tw-state-id": stateResult.stateId } as const)
+    : {}
 
   const filterProps = makeFilterProps(new Set(Object.keys(variants)))
   const tagLabel =
@@ -161,6 +164,7 @@ export function createComponent<P extends object = Record<string, unknown>>(
       const runtimeClassName = normalizeClassName(className)
       return React.createElement(tag, {
         ref,
+        ...stateAttributes,
         ...filterProps(rest),
         className: twMerge(base, engineClasses, runtimeClassName),
       })
@@ -179,6 +183,7 @@ export function createComponent<P extends object = Record<string, unknown>>(
 
     return React.createElement(tag, {
       ref,
+      ...stateAttributes,
       ...filterProps(rest),
       className: twMerge(base, variantClasses, compoundClasses, engineClasses, runtimeClassName),
     })

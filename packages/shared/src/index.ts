@@ -230,6 +230,14 @@ export function formatErrorMessage(error: unknown): string {
   return String(error)
 }
 
+export function getNativeDisableEnvVar(): "TWS_NO_NATIVE" | "TWS_NO_RUST" | "TWS_DISABLE_NATIVE" | null {
+  const isTruthy = (value: string | undefined): boolean => value === "1" || value === "true"
+  if (isTruthy(process.env.TWS_NO_NATIVE)) return "TWS_NO_NATIVE"
+  if (isTruthy(process.env.TWS_NO_RUST)) return "TWS_NO_RUST"
+  if (isTruthy(process.env.TWS_DISABLE_NATIVE)) return "TWS_DISABLE_NATIVE"
+  return null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // LRU Cache
 // ─────────────────────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { createRequire } from "node:module"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { Worker } from "node:worker_threads"
-import { createLogger } from "@tailwind-styled/shared"
+import { createLogger, getNativeDisableEnvVar } from "@tailwind-styled/shared"
 import { filePriority, type NativeCacheEntry, readCache, writeCache } from "./cache-native"
 import { hashContentNative, isRustCacheAvailable } from "./native-bridge"
 import {
@@ -55,6 +55,13 @@ const createNativeParserLoader = () => {
 
   const loadNativeParserBinding = (): NativeParserBinding | null => {
     if (_state.binding !== undefined) return _state.binding
+    const disabledByEnv = getNativeDisableEnvVar()
+    if (disabledByEnv) {
+      _state.binding = null
+      _state.initError = `native parser disabled by ${disabledByEnv}`
+      debugNative(_state.initError)
+      return _state.binding
+    }
 
     const runtimeDir = getRuntimeDir()
     const req = createRequire(path.join(runtimeDir, "noop.cjs"))

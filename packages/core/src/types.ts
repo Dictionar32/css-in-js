@@ -4,13 +4,13 @@
 
 // ── Shared types (re-exported for backward compatibility) ─────────────────────
 import type { HtmlTagName, VariantMatrix, VariantValue } from "@tailwind-styled/shared"
+import type { AnimateOptions } from "@tailwind-styled/animate"
 export type { HtmlTagName, VariantProps, VariantValue, VariantMatrix } from "@tailwind-styled/shared"
 
 // ── Variant Types ────────────────────────────────────────────────────────────
 export type VariantLiterals = string | number | boolean
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type InferVariantProps<T = any> = {
+export type InferVariantProps<T = Record<string, Record<string, string>>> = {
   [K in keyof T]?: keyof T[K]
 }
 
@@ -40,8 +40,9 @@ export interface StateConfig {
 }
 
 // ── CV (Class Variant) Function ──────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CvFn<C = any> = any
+export type CvFn<C extends ComponentConfig = ComponentConfig> = (
+  props?: InferVariantProps<C> & { className?: string } & Readonly<Record<string, unknown>>
+) => string
 
 // ── Styled Component Props ───────────────────────────────────────────────────
 export interface StyledComponentProps {
@@ -65,7 +66,7 @@ export interface TwStyledComponent<T = string> {
   displayName?: string
   extend?: (strings: TemplateStringsArray) => TwStyledComponent<T>
   withVariants?: (config: Partial<ComponentConfig>) => TwStyledComponent<T>
-  [key: string]: any
+  animate?: (opts: AnimateOptions) => Promise<TwStyledComponent<T>>
 }
 
 // ── Tw Sub Component ─────────────────────────────────────────────────────────
@@ -85,12 +86,13 @@ export type TwTagFactoryAny = {
 }
 
 // ── Tw Component Factory ────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type TwComponentFactory<T = any> = any
+export type TwComponentFactory<T = unknown> = (
+  stringsOrConfig: TemplateStringsArray | ComponentConfig,
+  ...exprs: unknown[]
+) => TwStyledComponent<T>
 
 // ── Tw Server Object ────────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type TwServerObject = any
+export type TwServerObject = Record<string, TwComponentFactory<string>>
 
 // ── Storybook utilities ──────────────────────────────────────────────────────
 export function enumerateVariantProps(
