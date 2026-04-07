@@ -6,22 +6,12 @@
  * Compiles Tailwind class lists to atomic CSS using Rust native engine.
  */
 
-import { createRequire } from "node:module"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-
-// ESM-compatible __dirname
-const getDirname = (): string => {
-  if (typeof __dirname !== "undefined") {
-    return __dirname
-  }
-  // ESM fallback - handle case where import.meta is converted to empty object in CJS
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  // Final fallback: use process.cwd()
-  return process.cwd()
-}
+import {
+  TwError,
+  loadNativeBinding,
+  resolveNativeBindingCandidates,
+  resolveRuntimeDir,
+} from "@tailwind-styled/shared"
 
 // ── Native binding - Factory Pattern (no let!)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,42 +35,49 @@ const createBindingLoader = () => {
 
   const loadBinding = (): NativeCssBinding => {
     if (bindingState.current !== undefined) {
-      if (bindingState.current === null) {
-        throw new Error(
-          `[tailwind-styled/compiler v5] Native CSS binding is required but not available.\n` +
-            `Please ensure the native module is properly built.`
-        )
+      const existingBinding = bindingState.current
+      if (existingBinding === null) {
+        throw TwError.fromRust({
+          code: "COMPILER_NATIVE_BINDING_UNAVAILABLE",
+          message:
+            "[tailwind-styled/compiler v5] Native CSS binding is required but not available. Please ensure the native module is properly built.",
+        })
       }
-      return bindingState.current
+      return existingBinding
     }
 
-    const req = createRequire(import.meta.url)
-    const currentDir = getDirname()
-    const candidates = [
-      path.resolve(process.cwd(), "native", "tailwind_styled_parser.node"),
-      path.resolve(currentDir, "..", "..", "..", "..", "native", "tailwind_styled_parser.node"),
-    ]
-    for (const c of candidates) {
-      try {
-        const mod = req(c) as NativeCssBinding
-        if (mod?.compileCss) {
-          bindingState.current = mod
-          return bindingState.current
-        }
-      } catch {
-        /* next */
-      }
+    const runtimeDir = resolveRuntimeDir(typeof __dirname === "string" ? __dirname : undefined, import.meta.url)
+    const candidates = resolveNativeBindingCandidates({
+      runtimeDir,
+      envVarNames: ["TWS_NATIVE_PATH"],
+    })
+    const { binding, loadErrors } = loadNativeBinding<NativeCssBinding>({
+      runtimeDir,
+      candidates,
+      isValid: (module: unknown): module is NativeCssBinding =>
+        typeof (module as NativeCssBinding | null | undefined)?.compileCss === "function",
+      invalidExportMessage: "Module loaded but missing `compileCss` export.",
+    })
+    if (binding) {
+      bindingState.current = binding
+      return binding
     }
 
-    // v5: Throw error instead of returning null
     bindingState.current = null
-    throw new Error(
-      `[tailwind-styled/compiler v5] Native CSS binding not found.\n` +
-        `Tried loading from:\n` +
-        candidates.map((c) => `  - ${c}`).join("\n") +
-        `\n` +
-        `Please build the native module.`
-    )
+    const lines = [
+      "[tailwind-styled/compiler v5] Native CSS binding not found.",
+      "Tried loading from:",
+      ...candidates.map((candidate) => `  - ${candidate}`),
+      "Please build the native module.",
+    ]
+    if (loadErrors.length > 0) {
+      lines.push("Load errors:")
+      for (const entry of loadErrors) lines.push(`  - ${entry.path}: ${entry.message}`)
+    }
+    throw TwError.fromRust({
+      code: "COMPILER_NATIVE_BINDING_NOT_FOUND",
+      message: lines.join("\n"),
+    })
   }
 
   return {

@@ -5,6 +5,9 @@ import { registerWhyCommand } from "./commands/whyCommand"
 import { createCompletionProvider } from "./providers/completionProvider"
 import { createHoverProvider } from "./providers/hoverProvider"
 import { createInlineDecorationProvider } from "./providers/inlineDecorationProvider"
+import { createDefinitionProvider } from "./providers/definitionProvider"
+import { createRenameProvider } from "./providers/renameProvider"
+import { createCodeActionProvider } from "./providers/codeActionProvider"
 import { EngineService } from "./services/engineService"
 
 export function activate(context: vscode.ExtensionContext) {
@@ -53,6 +56,31 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   context.subscriptions.push(...createInlineDecorationProvider(engineService))
+
+  const definitionProvider = createDefinitionProvider()
+  context.subscriptions.push(
+    vscode.languages.registerDefinitionProvider(
+      languageSelector,
+      definitionProvider
+    )
+  )
+
+  const renameProvider = createRenameProvider()
+  context.subscriptions.push(
+    vscode.languages.registerRenameProvider(
+      languageSelector,
+      renameProvider
+    )
+  )
+
+  const codeActionProvider = createCodeActionProvider()
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      languageSelector,
+      codeActionProvider,
+      { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+    )
+  )
 }
 
 export function deactivate() {}

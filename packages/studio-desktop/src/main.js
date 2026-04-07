@@ -21,31 +21,18 @@ const http = require("node:http")
 const { spawn } = require("node:child_process")
 const fs = require("node:fs")
 const { setupAutoUpdater, checkForUpdatesManually } = require("./updater")
+const { resolveInitialProject, resolveStudioScript } = require("./main.paths")
+const { StudioError } = require("./studioError")
 
 const STUDIO_PORT = Number(process.env.STUDIO_PORT ?? 3030)
 const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev")
-
-// Resolve studio script — electron-builder bundles scripts ke process.resourcesPath
-function resolveStudioScript() {
-  const candidates = [
-    // Packaged: electron-builder extraResources copies ke resources/
-    process.resourcesPath ? path.join(process.resourcesPath, "scripts/v45/studio.mjs") : null,
-    // Dev: monorepo root
-    path.join(__dirname, "../../scripts/v45/studio.mjs"),
-    // Fallback: cwd
-    path.join(process.cwd(), "scripts/v45/studio.mjs"),
-  ].filter(Boolean)
-
-  return candidates.find((p) => fs.existsSync(p)) ?? candidates[1]
-}
 
 const STUDIO_SCRIPT = resolveStudioScript()
 
 app.mainWindow = null
 app.tray = null
 app.studioServer = null
-app.currentProject = process.argv.find((a) => a.startsWith("--project="))?.split("=")[1]
-  ?? process.cwd()
+app.currentProject = resolveInitialProject()
 
 // ─── Start studio server ───────────────────────────────────────────────────────
 
@@ -55,10 +42,17 @@ function startStudioServer(projectDir) {
     app.studioServer = null
   }
 
-  app.studioServer = spawn(process.execPath, [STUDIO_SCRIPT, `--project=${projectDir}`, `--port=${STUDIO_PORT}`], {
+  const resolvedProjectDir = fs.existsSync(projectDir) ? projectDir : process.cwd()
+
+  app.studioServer = spawn(process.execPath, [STUDIO_SCRIPT, `--project=${resolvedProjectDir}`, `--port=${STUDIO_PORT}`], {
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, PORT: String(STUDIO_PORT) },
   })
+
+  if (resolvedProjectDir !== projectDir) {
+    console.warn(`[studio] project path not found, fallback to cwd: ${resolvedProjectDir}`)
+    app.currentProject = resolvedProjectDir
+  }
 
   app.studioServer.stdout?.on("data", (d) => {
     if (process.env.STUDIO_VERBOSE) process.stdout.write(d)
@@ -299,7 +293,7 @@ function setupIpc() {
       engineState.engine = await createEngine({ root: app.currentProject })
       return engineState.engine
     } catch (e) {
-      throw new Error(`Engine unavailable: ${e.message}`)
+      throw StudioError.engineUnavailable(e)
     }
   }
 

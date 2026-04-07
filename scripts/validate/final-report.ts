@@ -173,6 +173,14 @@ const checks = {
       detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
     }
   })(),
+  wave1FoundationGate: (() => {
+    const r = run("npm run wave1:gate")
+    return {
+      label: "wave1 rust→ts foundation gate",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
   syncHelperTests: (() => {
     const r = run("npm run test:sync")
     return {

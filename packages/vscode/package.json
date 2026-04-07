@@ -60,12 +60,14 @@
     "build": "tsup src/extension.ts --format cjs --out-dir dist --external vscode",
     "dev": "tsup src/extension.ts --format cjs --out-dir dist --watch --external vscode",
     "check": "tsc --noEmit",
+    "test": "tsx --test src/providers/classToken.test.ts src/providers/renameProviderError.test.ts",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/vscode"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/vscode": "^1.75.0",
+    "tsx": "^4.21.0",
     "tsup": "^8",
     "typescript": "^6"
   },

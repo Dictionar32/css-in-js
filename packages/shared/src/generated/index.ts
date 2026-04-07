@@ -1,5 +1,7 @@
 /* Auto-generated from Rust JSON Schema — do not edit manually */
 
-// Placeholder index. No Rust JSON Schemas detected yet.
-// Once native/json-schemas/*.json exists, run scripts/generate-json-schemas.ts.
-export {}
+export * from "./AnalyzerReport.schema"
+export * from "./ParsedClass.schema"
+export * from "./RouteClassMap.schema"
+export * from "./ScanResult.schema"
+export * from "./TransformResult.schema"

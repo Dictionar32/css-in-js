@@ -15,7 +15,7 @@
     "build:all": "electron-builder --mac --win --linux",
     "build": "electron-builder --dir",
     "check": "tsc --noEmit",
-    "test": "echo \"Studio desktop tests require Electron — run: npm run start\"",
+    "test": "node --test src/main.paths.test.js src/studioError.test.js",
     "clean": "node -e \"require('node:fs').rmSync('dist-electron',{recursive:true,force:true})\"",
     "pack:check": "echo \"Studio desktop pack uses electron-builder\"",
     "package:mac": "electron-builder --mac",

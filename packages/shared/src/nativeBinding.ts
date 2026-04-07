@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { TwError } from "./errors"
 
 export type PlatformExtension = ".node" | ".dll" | ".dylib" | ".so"
 
@@ -47,6 +48,7 @@ export interface LoadNativeBindingResult<T> {
 }
 
 export function formatErrorMessage(error: unknown): string {
+  if (error instanceof TwError) return `${error.code}: ${error.message}`
   return error instanceof Error ? error.message : String(error)
 }
 
@@ -71,8 +73,10 @@ export function resolveNativeBindingCandidates(
 
     if (options.enforceNodeExtensionForEnvPath) {
       if (path.extname(resolved).toLowerCase() !== ".node") {
-        throw new Error(
-          `Invalid native binding path from ${envVarName}="${raw}". Expected a .node file.`
+        throw TwError.fromIo(
+          "NATIVE_PATH_INVALID_EXTENSION",
+          `Invalid native binding path from ${envVarName}="${raw}". Expected a .node file.`,
+          { envVarName, raw, resolved }
         )
       }
     }
@@ -195,5 +199,8 @@ export function loadNativeBindingOrThrow<T>(
     "'npm run build:rust' is executed before running tests or building."
   )
 
-  throw new Error(lines.join("\n"))
+  throw TwError.fromRust({
+    code: "NATIVE_BINDING_NOT_FOUND",
+    message: lines.join("\n"),
+  })
 }

@@ -3,6 +3,11 @@ import { existsSync, readdirSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import {
+  TwError,
+  type ErrorSource,
+  wrapUnknownError as wrapUnknownErrorInternal,
+} from "./errors"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -62,38 +67,22 @@ export function createDebugLogger(namespace: string, label?: string): (msg: stri
 // Error handling
 // ─────────────────────────────────────────────────────────────────────────────
 
-export class TwError extends Error {
-  public readonly domain: string
-  public readonly code: string
-
-  constructor(domain: string, code: string, message: string) {
-    super(message)
-    this.name = "TwError"
-    this.domain = domain
-    this.code = code
-  }
-
-  static fromIo(code: string, message: string): TwError {
-    return new TwError("io", code, message)
-  }
-
-  static fromCompile(code: string, message: string): TwError {
-    return new TwError("compile", code, message)
-  }
-
-  static fromRust(opts: { code: string; message: string }): TwError {
-    return new TwError("rust", opts.code, opts.message)
-  }
-
-  override toString(): string {
-    return `TwError [${this.domain}:${this.code}] ${this.message}`
-  }
-}
+export { TwError }
 
 export function wrapUnknownError(domain: string, code: string, error: unknown): TwError {
-  if (error instanceof TwError) return error
-  const message = error instanceof Error ? error.message : String(error)
-  return new TwError(domain, code, message)
+  return wrapUnknownErrorInternal(asErrorSource(domain), code, error)
+}
+
+function asErrorSource(domain: string): ErrorSource {
+  switch (domain) {
+    case "rust":
+    case "validation":
+    case "compile":
+    case "io":
+      return domain
+    default:
+      return "compile"
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

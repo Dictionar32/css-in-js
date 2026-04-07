@@ -1,0 +1,22 @@
+{
+  "$id": "RouteClassMap.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "classes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "route": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "classes",
+    "route"
+  ],
+  "title": "RouteClassMapSchema",
+  "type": "object"
+}

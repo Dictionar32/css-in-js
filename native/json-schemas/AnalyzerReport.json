@@ -1,0 +1,23 @@
+{
+  "$id": "AnalyzerReport.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "duplicates": {
+      "format": "uint",
+      "minimum": 0.0,
+      "type": "integer"
+    },
+    "total_classes": {
+      "format": "uint",
+      "minimum": 0.0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "duplicates",
+    "total_classes"
+  ],
+  "title": "AnalyzerReportSchema",
+  "type": "object"
+}

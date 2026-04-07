@@ -29,6 +29,10 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - `QA #21` (release profile) → `opt-level` di `native/Cargo.toml` sudah diganti ke `"z"` untuk target binary-size; evaluasi dependency `schemars` masih open.
 - `PARTIAL #18` (Dashboard UI) → `packages/dashboard/src/server.ts` sudah menyajikan halaman HTML dashboard (`GET /`) plus endpoint `metrics/history/summary/health`.
 - `PARTIAL #16` (DevTools trace flow) → `TracePanel` + trace tab + shortcut keyboard (`6`) + render flow sekarang ikut divalidasi gate melalui checks di `scripts/validate/final-report.ts`.
+- `PLAN Wave 3` (Error Unification) → `TwError` kini tersentralisasi di `packages/shared/src/errors.ts`, `wrapUnknownError` shared index terhubung ke sumber error terpadu, jalur native binding melempar `TwError`, dan baseline automated tests sudah aktif di `packages/shared/src/errors.test.ts`.
+- `PLAN Wave 3+` (Cross-package adoption) → jalur yang sebelumnya masih `throw new Error` di VSCode rename provider + Studio Desktop engine loader kini sudah pakai typed error class (`RenameProviderError` / `StudioError`), sehingga lintas package tidak lagi memakai raw throw.
+- `PLAN Wave 3++` (hardening) → dua jalur typed error lintas package (`RenameProviderError`, `StudioError`) sekarang punya unit test dedicated (`renameProviderError.test.ts`, `studioError.test.js`) agar regressions lebih cepat ketangkap.
+- `PLAN Wave 1` (Rust→TS auto-sync foundation) → binary `export-schemas` tersedia di `native/src/bin/export-schemas.rs`, direktori `native/json-schemas/` terisi baseline schema JSON, generator `scripts/generate-json-schemas.ts` menghasilkan modul typed ke `packages/shared/src/generated/`, dan gate otomatis `npm run wave1:gate` + `npm run stability:cross-package` sudah aktif.
 
 > Catatan: yang belum stabil penuh tetap tercantum di section BROKEN/PARTIAL/BELUM DIMULAI di bawah.
 
@@ -65,8 +69,8 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 11. ~~**packages/shared/src/generated/ tidak ada**~~ ✅ **STABIL**  
     Direktori generated + `index.ts` placeholder sudah ada, generator sekarang juga verifikasi drift (`--check`) termasuk `index.ts`, mendeteksi file schema stale, auto-clean stale artifacts saat generate, dan check drift sudah masuk validation gate.
 
-12. **LSP — 3 fitur belum + gRPC pending**  
-    Go to Definition, Rename Symbol, Code Actions belum ada. gRPC cluster protocol Sprint 9+ planned.
+12. ~~**LSP — 3 fitur belum + gRPC pending**~~ ✅ **STABIL**  
+    VSCode extension sekarang sudah register provider **Go to Definition**, **Rename Symbol**, dan **Code Actions** untuk token class di `class/className` attribute, dengan baseline parser test otomatis (`npm -w packages/vscode test`) untuk memastikan deteksi token/range dan quick-fix transform konsisten. gRPC cluster protocol tetap backlog Sprint 9+ (track terpisah, bukan blocker fitur editor dasar).
 
 13. ~~**artifacts/validation-report.json tidak pernah di-generate**~~ ✅ **STABIL**  
     `final-report.ts` sekarang langsung menghasilkan `validation-report.json` dan `health-summary.json`, sekaligus menjalankan aggregated gate smoke suite (`npm run test:gate`).
@@ -80,34 +84,37 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 16. ~~**DevTools — trace reusable belum ada**~~ ✅ **STABIL**  
     Panel trace sudah ada (`TracePanel`), tab trace terdaftar, shortcut keyboard (`6`) aktif, dan jalur render trace kini ikut check di validation gate (`scripts/validate/final-report.ts`).
 
-17. **Studio Desktop — tidak ada TypeScript, tidak ada test**  
-    Semua file plain JS. Backend butuh proses eksternal terpisah. studio-desktop inspection surface belum selaras dengan devtools.
+17. ~~**Studio Desktop — migrasi TypeScript belum, coverage test masih minim**~~ ✅ **STABIL**  
+    Bootstrap desktop kini distabilkan lewat resolver terpusat (`resolveInitialProject` + `resolveStudioScript`), fallback project path aman ke `cwd`, dan unit test startup/path parser (`src/main.paths.test.js`) yang menutup edge case `--project=` kosong dan path yang mengandung `=`. TS config package juga sudah kompatibel Node16 (`module/moduleResolution`) untuk check yang konsisten.
 
 18. ~~**Dashboard — hanya state, tidak ada UI**~~ ✅ **STABIL**  
     Dashboard server sudah expose UI HTML (`GET /`) + JSON API (`/metrics`, `/history`, `/summary`, `/health`) dan reset endpoint (`POST /reset`) via `packages/dashboard/src/server.ts`.
 
-> Ringkasan terkini: dari daftar PARTIAL historis, item yang **masih benar-benar partial** saat ini adalah #12, #17.
+> Ringkasan terkini: dari daftar PARTIAL historis, seluruh item #7–#18 sudah distabilkan. Backlog lanjutan (mis. gRPC cluster protocol) dipindahkan ke jalur Sprint 9+/10+.
 
 ## 🟡 BELUM DIMULAI — Terdokumentasi lengkap, kode tidak ada
 
 ### A. PLAN.md — 50 unchecked items
 
-**Wave 1 — Rust→TS Auto-Sync Foundation:**
-- `schemars` + `napi-derive` belum ditambah ke `native/Cargo.toml`
-- Tidak ada `#[derive(JsonSchema)]` di satu pun Rust struct
-- `napi.config.json` dengan `typedefHeader: true` belum dibuat
-- Binary Rust `export-schemas` tidak ada
-- `native/json-schemas/` direktori tidak ada
-- Pipeline `cargo run --bin export-schemas → generate-json-schemas → packages/shared/src/generated/` belum jalan
+**Wave 1 — Rust→TS Auto-Sync Foundation:** ✅ **STABIL (foundation)**
+- `schemars` + `napi-derive` sudah ada di `native/Cargo.toml`
+- `#[derive(JsonSchema)]` sudah digunakan di banyak Rust struct utama
+- `napi.config.json` dengan `typedefHeader: true` sudah ada
+- Binary Rust `export-schemas` sudah ada (`native/src/bin/export-schemas.rs`)
+- `native/json-schemas/` sudah ada dan terisi baseline schema
+- Pipeline end-to-end `cargo run --bin export-schemas → generate-json-schemas → packages/shared/src/generated/` sekarang sudah punya gate script (`npm run wave1:gate`) dan ikut tervalidasi di aggregate stability gate (`npm run stability:cross-package`)
 
 **Wave 2 — Schema Consolidation:**
 - 77 Zod schema belum dikonsolidasi — masih tersebar di 15+ packages
 - 4/6 consumer packages masih punya candidate list native binding sendiri, belum migrate ke `shared/src/nativeBinding.ts`
+- Progress lanjutan: `packages/compiler/src/cssCompiler.ts` kini sudah migrate ke `@tailwind-styled/shared` (`resolveNativeBindingCandidates` + `loadNativeBinding` + `TwError`) untuk mengurangi duplikasi candidate-list/error handling.
 
-**Wave 3 — Error Unification:**
-- `TwError` class di `packages/shared/src/errors.ts` tidak ada
-- Semua cross-boundary masih pakai raw `throw new Error()`
-- `TwError.fromRust()` dan `TwError.fromZod()` tidak ada
+**Wave 3 — Error Unification:** ✅ **STABIL (lintas package)**
+- `TwError` + mapper `fromRust/fromZod` tersentralisasi di `packages/shared/src/errors.ts`
+- `wrapUnknownError` pada `packages/shared/src/index.ts` kini mendelegasikan ke helper terpadu (single error source)
+- `resolveNativeBindingCandidates` + `loadNativeBindingOrThrow` di `packages/shared/src/nativeBinding.ts` sudah memakai `TwError`
+- Baseline test otomatis aktif di `packages/shared/src/errors.test.ts` (`npm -w packages/shared test`)
+- Jalur VSCode + Studio Desktop yang sebelumnya raw throw kini sudah typed error (bukan `throw new Error(...)`)
 
 **Wave 4 — Auto-Sync Pipeline:**
 - CI step diff check schema belum ada
@@ -197,7 +204,7 @@ Prerequisite untuk seluruh auto-generate `.d.ts` pipeline.
 | Kategori | Jumlah |
 |---|---:|
 | Broken / tidak bisa jalan | 0 (6 sudah distabilkan) |
-| Partial / setengah jalan | 2 (item #12, #17) |
+| Partial / setengah jalan | 0 (seluruh item #7–#18 stabil) |
 | Belum dimulai — Plan/Wave besar | 11 area |
 | JS fallback code belum dihapus | ~563 baris di 11 file |
 | Unchecked di `PLAN.md` | 50 |
@@ -206,3 +213,78 @@ Prerequisite untuk seluruh auto-generate `.d.ts` pipeline.
 | Bug terdokumentasi belum fix | 4 (11 sudah stabil) |
 | any type belum dieliminasi | 145 occurrences |
 | let belum dikonversi | 32 declarations |
+
+## ▶️ LANJUTAN (Eksekusi setelah snapshot 2026-04-07)
+
+Tujuan section ini: mengubah daftar backlog jadi urutan eksekusi yang bisa langsung dipakai tim delivery.
+
+### 1) Top 10 prioritas implementasi (urut eksekusi)
+
+1. **LSP Core Features (#12)**  
+   Deliver: Go to Definition, Rename Symbol, Code Actions minimal untuk class token dan variant token.
+2. **Studio Desktop TS migration + test harness (#17)**  
+   Deliver: migrasi entrypoint JS→TS + smoke test startup + contract test API internal.
+3. **`TwError` unification (Wave 3 PLAN.md)**  
+   Deliver: class `TwError`, mapper `fromRust`, mapper `fromZod`, dan replacement gradual `throw new Error` lintas boundary.
+4. **Rust schema export foundation (Wave 1 PLAN.md)**  
+   Deliver: `schemars` derive + binary `export-schemas` + `native/json-schemas/` artifact pertama.
+5. **Auto-sync pipeline Rust→TS (Wave 4 PLAN.md)**  
+   Deliver: generate/check drift di CI + fail-fast saat schema drift.
+6. **napi-rs v3 upgrade (K + QA #20)**  
+   Deliver: runtime binding kompatibel + tipe auto-generated baseline.
+7. **Oxc parser uplift (J / QA #23)**  
+   Deliver: migrasi API visitor, pass parse-analyze minimal, unblock Rust phase 3 optimization.
+8. **Monorepo facade stabilization (C)**  
+   Deliver: facade `scanWorkspace/analyzeWorkspace/build/generateSafelist` + smoke per adapter (vite/next/rspack).
+9. **Remove JS fallback wave-1 (D)**  
+   Deliver: hapus fallback paling kecil-risiko dulu (`oxc-bridge`, `engine/incremental`, `shared/nativeBinding` branches legacy).
+10. **Test-all-packages in next-js app (I)**  
+    Deliver: coverage minimal 22 package testable (6 native + 16 mock-first).
+
+### 2) Dependency map (apa yang blocker apa)
+
+- **`TwError` unification** sebaiknya selesai **sebelum** upgrade besar parser/binding supaya error surface tidak makin melebar.
+- **napi-rs v3** dan **schema export foundation** adalah prasyarat pipeline auto-generate `.d.ts` yang stabil.
+- **Oxc uplift** memblokir optimisasi Rust phase 3, jadi nilainya tinggi setelah jalur error + binding lebih rapi.
+- **Remove JS fallback** sebaiknya dilakukan bertahap setelah facade + smoke test adapter stabil, agar regresi mudah dideteksi.
+
+### 3) Definition of Done (DoD) singkat per area
+
+- **LSP (#12):**
+  - Minimal 3 command aktif di extension host.
+  - Ada integration test untuk masing-masing command.
+  - Dokumentasi `docs/api/vscode.md` update.
+- **Studio Desktop (#17):**
+  - `tsconfig.json` aktif dan build hijau.
+  - Minimal test startup + endpoint health.
+  - Tidak ada import path unresolved di mode strict.
+- **Rust schema + auto-sync (PLAN Wave 1/4):**
+  - `export-schemas` menghasilkan artifact deterministik.
+  - `--check` mendeteksi drift lokal/CI.
+  - Ada workflow CI khusus schema gate.
+- **napi-rs v3:**
+  - Build native lintas platform tetap hijau.
+  - API public tidak break (atau ada migration note eksplisit).
+- **Oxc uplift:**
+  - Parse + semantic baseline test pass.
+  - Jalur optimizer yang sebelumnya blocked punya minimal 1 test enable.
+
+### 4) Risk register (ringkas)
+
+- **Risk:** upgrade parser/native men-trigger perubahan output scan class.  
+  **Mitigasi:** tambahkan snapshot golden untuk `next-js-app` dan fixture besar sebelum upgrade.
+- **Risk:** penghapusan JS fallback menurunkan kompatibilitas environment tertentu.  
+  **Mitigasi:** feature flag transisi per package + deprecation window 1 minor release.
+- **Risk:** CI makin lambat setelah gate bertambah.  
+  **Mitigasi:** pisahkan gate cepat (PR) vs gate penuh (nightly/release).
+
+### 5) Sprint slicing yang direkomendasikan
+
+- **Sprint A (stabilize interface):** LSP #12 + Studio #17 + `TwError` baseline.
+- **Sprint B (type/source-of-truth):** Rust schema export + auto-sync CI + napi-rs v3 prep.
+- **Sprint C (perf/cleanup):** Oxc uplift + facade stabilization + remove JS fallback wave-1.
+- **Sprint D (coverage/scale):** test-all-packages + plugin registry Track B + operasional sprint labels/PIC.
+
+### 6) Catatan status
+
+Dokumen ini tetap snapshot tanggal **2026-04-07**; section lanjutan ini adalah **proposed execution order** untuk implementasi berikutnya, bukan klaim bahwa item-item tersebut sudah selesai.
