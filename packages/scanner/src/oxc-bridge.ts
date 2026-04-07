@@ -8,20 +8,11 @@
  * yang berbasis regex. Lebih akurat karena pakai real AST parser.
  */
 
-import { createRequire } from "node:module"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-
-// ESM-compatible __dirname equivalent
-function getDirname(): string {
-  if (typeof __dirname !== "undefined") {
-    return __dirname
-  }
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
+import {
+  loadNativeBinding,
+  resolveNativeBindingCandidates,
+  resolveRuntimeDir,
+} from "@tailwind-styled/shared"
 
 interface NativeOxcBinding {
   oxcExtractClasses?: (
@@ -57,22 +48,19 @@ const createOxcBindingLoader = () => {
       return _state.binding
     }
 
-    const req = createRequire(import.meta.url)
-    const runtimeDir = getDirname()
-    const candidates = [
-      path.resolve(process.cwd(), "native", "tailwind_styled_parser.node"),
-      path.resolve(runtimeDir, "..", "..", "..", "..", "native", "tailwind_styled_parser.node"),
-    ]
-    for (const c of candidates) {
-      try {
-        const mod = req(c) as NativeOxcBinding
-        if (mod?.oxcExtractClasses) {
-          _state.binding = mod
-          return mod
-        }
-      } catch {
-        /* next */
-      }
+    const runtimeDir = resolveRuntimeDir(undefined, import.meta.url)
+    const candidates = resolveNativeBindingCandidates({ runtimeDir })
+    const loaded = loadNativeBinding<NativeOxcBinding>({
+      runtimeDir,
+      candidates,
+      isValid: (module: unknown): module is NativeOxcBinding =>
+        !!module && typeof (module as Partial<NativeOxcBinding>).oxcExtractClasses === "function",
+      invalidExportMessage: "native module does not expose oxcExtractClasses",
+    })
+
+    if (loaded.binding) {
+      _state.binding = loaded.binding
+      return loaded.binding
     }
     _state.binding = null
     throw new Error(

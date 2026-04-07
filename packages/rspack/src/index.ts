@@ -19,20 +19,9 @@ import { fileURLToPath } from "node:url"
 
 import { parseRspackPluginOptions } from "./schemas"
 
-function getDirname(): string {
-  if (typeof __dirname !== "undefined") {
-    return __dirname
-  }
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
-
 function resolveLoaderPath(basename: string): string {
-  const runtimeDir = getDirname()
-  const preferredExtensions =
-    typeof __dirname !== "undefined" && __dirname.length > 0 ? [".cjs", ".js"] : [".js", ".cjs"]
+  const runtimeDir = path.dirname(fileURLToPath(import.meta.url))
+  const preferredExtensions = [".js", ".cjs"]
 
   for (const ext of preferredExtensions) {
     const candidate = path.resolve(runtimeDir, `${basename}${ext}`)

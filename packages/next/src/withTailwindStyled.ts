@@ -43,20 +43,11 @@ interface NextConfigWithTurbopack {
   [key: string]: unknown
 }
 
-const resolveRuntimeDir = (): string => {
-  if (typeof __dirname !== "undefined" && __dirname.length > 0) {
-    return __dirname
-  }
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
+const resolveRuntimeDir = (): string => path.dirname(fileURLToPath(import.meta.url))
 
 const resolveLoaderPath = (basename: string): string => {
   const runtimeDir = resolveRuntimeDir()
-  const preferredExtensions =
-    typeof __dirname !== "undefined" && __dirname.length > 0 ? [".cjs", ".js"] : [".js", ".cjs"]
+  const preferredExtensions = [".js", ".cjs"]
 
   for (const ext of preferredExtensions) {
     const candidate = path.resolve(runtimeDir, `${basename}${ext}`)

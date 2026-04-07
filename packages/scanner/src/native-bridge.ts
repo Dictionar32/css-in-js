@@ -4,27 +4,15 @@
  * Wraps the Rust scan_workspace and extract_classes_from_source functions.
  * Uses @tailwind-styled/shared for native binding resolution.
  */
-import path from "node:path"
-import { fileURLToPath } from "node:url"
 import {
   createDebugLogger,
   loadNativeBinding,
   resolveNativeBindingCandidates,
+  resolveRuntimeDir,
   TwError,
 } from "@tailwind-styled/shared"
 
 const log = createDebugLogger("scanner:native")
-
-// ESM-compatible __dirname equivalent
-function getDirname(): string {
-  if (typeof __dirname !== "undefined") {
-    return __dirname
-  }
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
 
 interface NativeScannerBinding {
   scanWorkspace?: (
@@ -128,7 +116,7 @@ const createScannerBridgeLoader = () => {
       return throwNativeBindingError()
     }
 
-    const runtimeDir = getDirname()
+    const runtimeDir = resolveRuntimeDir(undefined, import.meta.url)
     const candidates = resolveNativeBindingCandidates({
       runtimeDir,
       includeDefaultCandidates: true,

@@ -114,6 +114,8 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - 4/6 consumer packages masih punya candidate list native binding sendiri, belum migrate ke `shared/src/nativeBinding.ts`
 - Progress lanjutan: `packages/compiler/src/cssCompiler.ts` kini sudah migrate ke `@tailwind-styled/shared` (`resolveNativeBindingCandidates` + `loadNativeBinding` + `TwError`) untuk mengurangi duplikasi candidate-list/error handling.
 - Progress lanjutan: `packages/compiler/src/rustCssCompiler.ts` juga sudah migrate ke helper `@tailwind-styled/shared` (`resolveRuntimeDir` + `resolveNativeBindingCandidates` + `loadNativeBinding`) sehingga candidate resolution native binding tidak lagi hardcoded lokal.
+- Progress lanjutan: `packages/scanner/src/ast-native.ts` kini memakai helper shared (`resolveRuntimeDir` + `resolveNativeBindingCandidates` + `loadNativeBinding`) dan `packages/scanner/tsconfig.json` sudah disejajarkan ke root `tsconfig.json` agar check scanner kembali hijau.
+- Guard tambahan: `packages/shared/src/errors.test.ts` sekarang memverifikasi fallback candidate `tailwind_styled_parser.node` mencakup path naik **3 level dan 4 level** dari `runtimeDir`.
 
 **Wave 3 — Error Unification:** ✅ **STABIL (lintas package)**
 - `TwError` + mapper `fromRust/fromZod` tersentralisasi di `packages/shared/src/errors.ts`
@@ -133,7 +135,8 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 - **Verdict saat ini:** Wave 4 stabil untuk scope gate + auto-sync baseline.
 
 ### B. ESM Migration — 34 unchecked items (3 wave penuh)
-Progress terbaru: Wave 2 (consumer compatibility tests) sekarang berlabel ✅ **STABIL (gated)** lewat `npm run wave2:gate` (`scripts/wave2/export-compat.test.mjs`) dan sudah ikut aggregate stability pipeline. Wave 1 (audit CJS assumptions di 6 packages) dan Wave 3 (ESM-only cutover) masih belum dimulai penuh. `createRequire` fallbacks masih tersebar.
+Progress terbaru: Wave 2 (consumer compatibility tests) sekarang berlabel ✅ **STABIL (gated)** lewat `npm run wave2:gate` (`scripts/wave2/export-compat.test.mjs`) dan sudah ikut aggregate stability pipeline. Wave 1 (audit CJS assumptions) **mulai berjalan** di `scanner` lewat migrasi `ast-native.ts` + `oxc-bridge.ts` + `in-memory-cache.ts` + `native-bridge.ts` + `index.ts` (runtime-dir resolution), di `compiler` lewat migrasi `nativeBridge.ts`/`rustCssCompiler.ts` ke helper shared (`resolveRuntimeDir` + `resolveNativeBindingCandidates` + `loadNativeBinding`), di `analyzer` dan `next` lewat penyelarasan `tsconfig` ke root agar workspace alias/check konsisten. Guard non-regression ESM sekarang aktif lewat `npm run esm:nonregression` (cek pattern `createRequire`/`module.require`/`__dirname` pada package target) dengan baseline terbaru `3` lokasi. Wave 3 (ESM-only cutover) masih belum dimulai penuh. `createRequire` fallbacks di package lain masih tersebar.
+- **Verdict status saat ini:** belum “beneran stabil” end-to-end karena Wave 1 belum selesai lintas semua package target dan Wave 3 belum dimulai.
 
 ### C. Monorepo Checklist — 41 unchecked items
 Facade `scanWorkspace/analyzeWorkspace/build/generateSafelist` di engine belum distabilkan. Smoke test per adapter (vite/next/rspack), artifact assertions, plugin starter template, shared observability contract lintas CLI/dashboard/devtools semua belum.

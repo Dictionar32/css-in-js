@@ -4,14 +4,12 @@
  * Uses @tailwind-styled/shared for native binding resolution.
  */
 
-import path from "node:path"
-import { createRequire } from "node:module"
-import { fileURLToPath } from "node:url"
 import {
   createDebugLogger,
   getNativeDisableEnvVar,
   loadNativeBinding,
   resolveNativeBindingCandidates,
+  resolveRuntimeDir,
   TwError,
 } from "@tailwind-styled/shared"
 import { type ComponentMetadata, parseComponentMetadataJson, parseNativeRscJson } from "./schemas"
@@ -91,14 +89,6 @@ const NATIVE_UNAVAILABLE_MESSAGE =
 // ─────────────────────────────────────────────────────────────────────────────
 // Native Bridge - Factory Pattern
 // ─────────────────────────────────────────────────────────────────────────────
-
-const getDirname = (): string => {
-  if (typeof __dirname !== "undefined") return __dirname
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
 
 const isValidCompilerBridge = (module: unknown): module is NativeBridge => {
   const candidate = module as Partial<NativeBridge> | null | undefined
@@ -183,7 +173,10 @@ const createBridgeLoader = () => {
         `For help, see: https://tailwind-styled.dev/docs/install`)
     }
 
-    const runtimeDir = getDirname()
+    const runtimeDir = resolveRuntimeDir(
+      undefined,
+      import.meta.url
+    )
     const candidates = resolveNativeBindingCandidates({
       runtimeDir,
       includeDefaultCandidates: true,
@@ -205,27 +198,17 @@ const createBridgeLoader = () => {
       return bridgeState.current
     }
 
-    // Try to load raw .node bindings from native folder
-    // by wrapping snake_case exported functions into the compiler native bridge API.
-    const candidateRequire = createRequire(path.join(runtimeDir, "noop.cjs"))
-
-    for (const candidate of candidates) {
-      try {
-        const mod = candidateRequire(candidate)
-        if (isValidCompilerBridge(mod)) {
-          log(`native bridge loaded successfully from candidate ${candidate}`)
-          bridgeState.current = mod
-          return bridgeState.current
-        }
-
-        if (isRawNativeBinding(mod)) {
-          log(`adapted raw native binding from ${candidate}`)
-          bridgeState.current = adaptRawNativeBinding(mod)
-          return bridgeState.current
-        }
-      } catch (err) {
-        log(`candidate ${candidate} failed to load: ${(err as Error).message ?? err}`)
-      }
+    // Second pass: accept raw snake_case exports and adapt them.
+    const rawBindingResult = loadNativeBinding<Record<string, unknown>>({
+      runtimeDir,
+      candidates,
+      isValid: isRawNativeBinding,
+      invalidExportMessage: "Module loaded but missing expected raw native binding exports",
+    })
+    if (rawBindingResult.binding) {
+      log("adapted raw native binding from candidate list")
+      bridgeState.current = adaptRawNativeBinding(rawBindingResult.binding)
+      return bridgeState.current
     }
 
     bridgeState.current = null
@@ -237,9 +220,10 @@ const createBridgeLoader = () => {
       ...candidates.map((c) => `  - ${c}`),
     ]
 
-    if (loadErrors.length > 0) {
+    const allLoadErrors = [...loadErrors, ...rawBindingResult.loadErrors]
+    if (allLoadErrors.length > 0) {
       lines.push("", "Load errors:")
-      for (const error of loadErrors) {
+      for (const error of allLoadErrors) {
         lines.push(`  - ${error.path}: ${error.message}`)
       }
     }

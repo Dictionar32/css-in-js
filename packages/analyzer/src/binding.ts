@@ -24,7 +24,7 @@ const createAnalyzerBindingLoader = () => {
 
     _state.bindingPromise = (async (): Promise<NativeAnalyzerBinding | null> => {
       const runtimeDir = resolveRuntimeDir(
-        typeof __dirname === "string" ? __dirname : undefined,
+        undefined,
         import.meta.url
       )
       const candidates = resolveNativeBindingCandidates({
@@ -81,7 +81,7 @@ export async function requireNativeBinding(): Promise<NativeAnalyzerBinding> {
   // Untuk error reporting, kita perlu akses ke candidates dan loadErrors
   // Tapi karena async, kita perlu load ulang atau simpan state
   const runtimeDir = resolveRuntimeDir(
-    typeof __dirname === "string" ? __dirname : undefined,
+    undefined,
     import.meta.url
   )
   const candidates = resolveNativeBindingCandidates({

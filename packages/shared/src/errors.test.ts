@@ -5,7 +5,11 @@ import path from "node:path"
 
 import { TwError } from "./errors"
 import { wrapUnknownError } from "./index"
-import { loadNativeBindingOrThrow, resolveNativeBindingCandidates } from "./nativeBinding"
+import {
+  getPlatformExtension,
+  loadNativeBindingOrThrow,
+  resolveNativeBindingCandidates,
+} from "./nativeBinding"
 
 test("wrapUnknownError maps unknown domain to compile source", () => {
   const err = wrapUnknownError("custom-domain", "CUSTOM_FAIL", new Error("boom"))
@@ -48,5 +52,21 @@ test("loadNativeBindingOrThrow throws TwError when no binding candidate can be l
         invalidExportMessage: "invalid export",
       }),
     (error: unknown) => error instanceof TwError && error.code === "NATIVE_BINDING_NOT_FOUND"
+  )
+})
+
+test("resolveNativeBindingCandidates includes 3-level and 4-level monorepo fallbacks", () => {
+  const runtimeDir = path.resolve("/repo", "packages", "scanner", "dist")
+  const bindingName = `tailwind_styled_parser${getPlatformExtension()}`
+  const candidates = resolveNativeBindingCandidates({
+    runtimeDir,
+    includeDefaultCandidates: true,
+  })
+
+  assert.ok(
+    candidates.includes(path.resolve(runtimeDir, "..", "..", "..", "native", bindingName))
+  )
+  assert.ok(
+    candidates.includes(path.resolve(runtimeDir, "..", "..", "..", "..", "native", bindingName))
   )
 })

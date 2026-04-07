@@ -1,9 +1,13 @@
 import fs from "node:fs"
-import { createRequire } from "node:module"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 import { Worker } from "node:worker_threads"
-import { createLogger, getNativeDisableEnvVar } from "@tailwind-styled/shared"
+import {
+  createLogger,
+  getNativeDisableEnvVar,
+  loadNativeBinding,
+  resolveNativeBindingCandidates,
+  resolveRuntimeDir,
+} from "@tailwind-styled/shared"
 import { filePriority, type NativeCacheEntry, readCache, writeCache } from "./cache-native"
 import { hashContentNative, isRustCacheAvailable } from "./native-bridge"
 import {
@@ -30,13 +34,7 @@ type NativeParserBinding = {
 }
 
 function getRuntimeDir(): string {
-  if (typeof __dirname !== "undefined" && __dirname.length > 0) {
-    return __dirname
-  }
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
+  return resolveRuntimeDir(undefined, import.meta.url)
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -64,47 +62,38 @@ const createNativeParserLoader = () => {
     }
 
     const runtimeDir = getRuntimeDir()
-    const req = createRequire(path.join(runtimeDir, "noop.cjs"))
+    const candidates = resolveNativeBindingCandidates({
+      runtimeDir,
+      includeDefaultCandidates: true,
+    })
+    const releaseBuildCandidate = path.resolve(
+      process.cwd(),
+      "native/build/Release/tailwind_styled_parser.node"
+    )
+    candidates.unshift(releaseBuildCandidate)
 
-    const candidates = [
-      path.resolve(process.cwd(), "native/tailwind_styled_parser.node"),
-      path.resolve(process.cwd(), "native/build/Release/tailwind_styled_parser.node"),
-      path.resolve(runtimeDir, "..", "..", "..", "native", "tailwind_styled_parser.node"),
-      path.resolve(
-        runtimeDir,
-        "..",
-        "..",
-        "..",
-        "native",
-        "build",
-        "Release",
-        "tailwind_styled_parser.node"
-      ),
-    ]
+    const { binding, loadErrors } = loadNativeBinding<NativeParserBinding>({
+      runtimeDir,
+      candidates,
+      isValid: (required): required is NativeParserBinding =>
+        !!required &&
+        (typeof required === "object" || typeof required === "function") &&
+        (typeof (required as NativeParserBinding).extractClassesFromSource === "function" ||
+          typeof (required as NativeParserBinding).parseClasses === "function" ||
+          typeof (required as NativeParserBinding).parse_classes === "function"),
+      invalidExportMessage:
+        "Module loaded but missing expected parser functions (extractClassesFromSource/parseClasses/parse_classes)",
+    })
 
-    for (const fullPath of candidates) {
-      if (!fs.existsSync(fullPath)) continue
-      try {
-        const required = req(fullPath) as NativeParserBinding
-        if (
-          required &&
-          (typeof required.extractClassesFromSource === "function" ||
-            typeof required.parseClasses === "function" ||
-            typeof required.parse_classes === "function")
-        ) {
-          _state.binding = required
-          debugNative(`using native parser from ${fullPath}`)
-          return _state.binding
-        }
-      } catch (error) {
-        _state.initError = error instanceof Error ? error.message : String(error)
-      }
+    if (binding) {
+      _state.binding = binding
+      debugNative("using native parser binding")
+      return _state.binding
     }
 
     _state.binding = null
-    if (!_state.initError) {
-      _state.initError = "native .node binding not found"
-    }
+    _state.initError =
+      loadErrors[0]?.message ?? _state.initError ?? "native .node binding not found"
     debugNative(`native binding not available: ${_state.initError}`)
     return _state.binding
   }
@@ -150,17 +139,10 @@ export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]
 export const DEFAULT_IGNORES = ["node_modules", ".git", ".next", "dist", "out", ".turbo", ".cache"]
 
 function resolveScannerWorkerModulePath(): string | null {
-  const runtimeDir = (() => {
-    if (typeof __dirname !== "undefined" && __dirname.length > 0) {
-      return __dirname
-    }
-    // ESM fallback
-    if (typeof import.meta !== "undefined" && import.meta.url) {
-      return path.dirname(fileURLToPath(import.meta.url))
-    }
-    // Final fallback
-    return process.cwd()
-  })()
+  const runtimeDir = resolveRuntimeDir(
+    undefined,
+    import.meta.url
+  )
 
   const candidates = [
     path.resolve(runtimeDir, "worker.cjs"),

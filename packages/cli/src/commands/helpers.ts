@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import fsp from "node:fs/promises"
-import { createRequire } from "node:module"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { CliUsageError } from "../utils/errors"
 import { firstExistingPath, resolveMonorepoPath } from "../utils/paths"
@@ -80,9 +80,9 @@ export function buildScriptCommand(scriptPath: string, scriptArgs: string[] = []
     scriptPath.endsWith(".ts") || scriptPath.endsWith(".tsx") || scriptPath.endsWith(".mts")
 
   if (isTypeScriptEntry) {
-    const requireFromHere = createRequire(import.meta.url)
     try {
-      const tsxCliPath = requireFromHere.resolve("tsx/dist/cli.mjs")
+      const tsxCliUrl = import.meta.resolve("tsx/dist/cli.mjs")
+      const tsxCliPath = fileURLToPath(tsxCliUrl)
       return {
         binary: process.execPath,
         args: [tsxCliPath, scriptPath, ...scriptArgs],

@@ -46,7 +46,7 @@ const createBindingLoader = () => {
       return existingBinding
     }
 
-    const runtimeDir = resolveRuntimeDir(typeof __dirname === "string" ? __dirname : undefined, import.meta.url)
+    const runtimeDir = resolveRuntimeDir(undefined, import.meta.url)
     const candidates = resolveNativeBindingCandidates({
       runtimeDir,
       envVarNames: ["TWS_NATIVE_PATH"],
