@@ -104,16 +104,61 @@ function tokensToTailwindTheme(tokens) {
   return ['@theme {', ...tokensToCss(tokens), '}'].join('\n')
 }
 
+function parseS3Url(fromArg) {
+  const [, rest] = fromArg.split('s3://')
+  const [bucket, ...keyParts] = rest.split('/')
+  return { bucket, key: keyParts.join('/') }
+}
+
+async function pullFromS3WithAwsSdk(fromArg) {
+  try {
+    const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
+    const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? 'us-east-1'
+    const endpoint = process.env.AWS_ENDPOINT_URL ?? process.env.TW_S3_ENDPOINT
+    const forcePathStyle = process.env.AWS_S3_FORCE_PATH_STYLE === '1'
+    const client = new S3Client({
+      region,
+      ...(endpoint ? { endpoint } : {}),
+      ...(forcePathStyle ? { forcePathStyle: true } : {}),
+    })
+
+    const { bucket, key } = parseS3Url(fromArg)
+    const response = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+    const body = await response.Body?.transformToString()
+    if (!body) throw new Error('Empty S3 response body')
+    return JSON.parse(body)
+  } catch (error) {
+    return { __error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
 async function pullFromRemote(fromArg) {
   let sourceUrl = fromArg
   if (fromArg.startsWith('s3://')) {
+    const sdkResult = await pullFromS3WithAwsSdk(fromArg)
+    if (!('__error' in sdkResult)) {
+      const existing = readCurrentTokens()
+      const merged = {
+        ...existing,
+        tokens: { ...(existing.tokens ?? {}), ...((sdkResult?.tokens ?? sdkResult) ?? {}) },
+        remoteSource: fromArg,
+        updatedAt: new Date().toISOString(),
+      }
+      writeTokens(merged)
+      console.log(`[sync] Pulled tokens from ${fromArg} (AWS SDK) -> ${TOKEN_FILE}`)
+      console.log(`[sync] Token groups: ${Object.keys(merged.tokens ?? {}).length}`)
+      return
+    }
+
     const endpoint = process.env.AWS_ENDPOINT_URL ?? process.env.TW_S3_ENDPOINT
     if (!endpoint) {
-      throw new Error('s3:// requires AWS_ENDPOINT_URL or TW_S3_ENDPOINT')
+      throw new Error(
+        `Unable to use AWS SDK (${sdkResult.__error}) and s3:// requires AWS_ENDPOINT_URL or TW_S3_ENDPOINT for HTTP fallback`
+      )
     }
-    const [, rest] = fromArg.split('s3://')
-    const [bucket, ...keyParts] = rest.split('/')
-    sourceUrl = `${endpoint.replace(/\/$/, '')}/${bucket}/${keyParts.join('/')}`
+    const { bucket, key } = parseS3Url(fromArg)
+    sourceUrl = `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`
+    process.stderr.write(`[sync] AWS SDK unavailable (${sdkResult.__error}), fallback HTTP endpoint...\n`)
   }
 
   process.stderr.write(`[sync] Fetching tokens from ${sourceUrl}...\n`)

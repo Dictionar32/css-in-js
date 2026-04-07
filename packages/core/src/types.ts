@@ -64,7 +64,7 @@ export interface TwObject {
 export interface TwStyledComponent<T = string> {
   (props: StyledComponentProps & Record<string, unknown>): unknown
   displayName?: string
-  extend?: (strings: TemplateStringsArray) => TwStyledComponent<T>
+  extend?: (strings: TemplateStringsArray, ...exprs: unknown[]) => TwStyledComponent<T>
   withVariants?: (config: Partial<ComponentConfig>) => TwStyledComponent<T>
   animate?: (opts: AnimateOptions) => Promise<TwStyledComponent<T>>
 }

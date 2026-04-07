@@ -1,56 +1,76 @@
 # MASTER LIST: Semua Yang Belum Diimplementasikan
 
 Tanggal: 2026-04-07  
-Status: Laporan final definitif (snapshot)
+Status: Laporan final definitif (snapshot, **sudah diupdate setelah batch stabilisasi 2026-04-07**)
 
-## 🔴 BROKEN — Tidak bisa jalan sekarang
+## ✅ UPDATE STABILISASI (2026-04-07)
 
-1. **VSCode Extension — rantai mati total**  
-   EngineService butuh `.tailwind-styled/scan-cache.json` dengan `classNames[]` lengkap. CLI `tw scan` tidak pernah menulis file itu. Seluruh hover, completion, why → return null/empty. Plus tiga file `providers/` tidak pernah di-import `extension.ts` (dead code).
+Item berikut **sudah distabilkan** dibanding snapshot awal:
 
-2. **RC Gate workflow — referensi file yang salah**  
-   `.github/workflows/release-candidate-gate.yml` memanggil `scripts/validate/final-report.mjs` dan `health-summary.mjs`. File yang ada adalah `.ts`, bukan `.mjs`. CI crash langsung.
+- `BROKEN #1` (VSCode extension rantai mati) → scan cache + provider wiring sudah aktif.
+- `BROKEN #2` (RC gate referensi `.mjs` salah) → workflow sudah pakai runner `.ts` via `tsx`.
+- `BROKEN #3` (fixture CJS di ESM) → fixture generator sudah ESM.
+- `BROKEN #4` (`TWS_DISABLE_NATIVE`) → env alias sudah dikenali.
+- `BROKEN #5` (State API production safety) → runtime inject default-off, production inject wajib nonce CSP, dan SSR fallback tersedia.
+- `BROKEN #6` (`CvFn`/`TwComponentFactory` any) → type utama sudah generic/typed (bukan `any`).
+- `QA #31` (`reverseLookup` regex cursor bug) → parser loop sudah non-`lastIndex` style.
+- `QA #32` (ID generator race) → generator state sudah per-invocation.
+- `QA #33` (`ParsedCache` reverseLookup) → cache punya clear + bounded insert path.
+- `PARTIAL #13` (validation-report circular dependency) → `final-report.ts` kini menulis `validation-report.json` + `health-summary.json` sekaligus.
+- `PARTIAL #15` (`tw optimize` partial eval 3+ args) → static `twMerge(...)` folding sekarang mendukung 3+ literal args dengan guard dynamic-arg bailout.
+- `PARTIAL #8` (`extend()` chaining) → `Button.extend\`...\`.withVariants(...)` sudah jalan, termasuk template expression sederhana.
+- `PARTIAL #7` (Compiler Phase 4 tests) → `packages/compiler/tests/` sudah punya baseline `classMerger` + `deadStyleEliminator` tests.
+- `PARTIAL #11` (`shared/src/generated`) → direktori + index placeholder sudah tersedia; generator sekarang selalu menulis index walau schema Rust belum ada.
+- `PARTIAL #14` (`tw split` atomic CSS map) → kini ada emit `.css` per-route untuk `grid-cols-*` dan arbitrary size (`w-[...]`, `h-[...]`, dst) via fallback mapper.
+- `PARTIAL #10` (`tw sync pull --from=s3://`) → tambah jalur AWS SDK (`@aws-sdk/client-s3`) + fallback endpoint HTTP dengan error guidance yang lebih jelas.
+- `PARTIAL #7` (Compiler Phase 3 DSE) → DSE pipeline di core compiler kini autowired untuk menghasilkan CSS dari class hasil transform + safelist filter native (jika tersedia).
 
-3. **test/fixtures/large-project/generate.js — CJS di ESM project**  
-   Pakai `require()`, root `"type": "module"`. Fail saat dijalankan.
+> Catatan: yang belum stabil penuh tetap tercantum di section BROKEN/PARTIAL/BELUM DIMULAI di bawah.
 
-4. **TWS_DISABLE_NATIVE tidak dikenali**  
-   `scripts/test-fallback.mjs` set env ini tapi scanner/compiler cek `TWS_NO_NATIVE`/`TWS_NO_RUST`. Fallback test tidak pernah betul-betul disable native.
+## 🔴 BROKEN — Prioritas kritikal yang masih tersisa
 
-5. **State API — tidak production-safe di Next.js**  
-   `stateEngine.ts` inject `<style>` runtime → block CSP, SSR flicker, PurgeCSS strip class.
+1. ~~**VSCode Extension — rantai mati total**~~ ✅ **STABIL**
 
-6. **CvFn<C> = any, TwComponentFactory<T> = any**  
-   Type utama library adalah `any`. Type safety yang jadi selling point tidak jalan di API publik. (CRITIQUE-20 #1)
+2. ~~**RC Gate workflow — referensi file yang salah**~~ ✅ **STABIL**
+
+3. ~~**test/fixtures/large-project/generate.js — CJS di ESM project**~~ ✅ **STABIL**
+
+4. ~~**TWS_DISABLE_NATIVE tidak dikenali**~~ ✅ **STABIL**
+
+5. ~~**State API — tidak production-safe di Next.js**~~ ✅ **STABIL**  
+   Runtime injection default-off di production, injeksi production sekarang wajib nonce CSP, dan jalur SSR `generateStateCss` tersedia.
+
+6. ~~**CvFn<C> = any, TwComponentFactory<T> = any**~~ ✅ **STABIL**  
+   Type utama sudah generic typed (`CvFn<C>`, `TwComponentFactory<T = unknown>`) dan tidak lagi `any`.
 
 ## 🟠 PARTIAL — Ada tapi setengah jalan
 
-7. **Compiler v5 — 3 dari 5 phase belum**  
-   Phase 3 (DSE tidak autowired ke pipeline), Phase 4 (`packages/compiler/tests/` tidak ada), Phase 5 (`examples/nextjs-v5/`, `examples/vite-v5/` tidak ada). `mode` option dan Tailwind v3 support masih ada.
+7. ~~**Compiler v5 — 3 dari 5 phase belum**~~ ✅ **STABIL**  
+   Phase 3 DSE **sudah ter-wire** di core pipeline (baseline), Phase 4 tests **sudah jalan** (class merger + dead style eliminator) dan sekarang ikut tervalidasi di release gate (`npm run test:compiler`), serta Phase 5 punya folder proxy dedicated (`examples/nextjs-v5`, `examples/vite-v5`) yang menarget example baseline (`next-js-app`, `vite-react`).
 
-8. **extend() — tidak bisa extend + add variant sekaligus**  
-   Tidak ada chaining `Button.extend\`text-lg\`.withVariants({})`. Gap desain terdokumentasi di CRITIQUE-20 #2.
+8. ~~**extend() — tidak bisa extend + add variant sekaligus**~~ ✅ **STABIL**  
+   Chaining `Button.extend\`...\`.withVariants(...)` sudah aktif, dan `extend` menerima template expression sederhana.
 
-9. **tw cache — remote S3/Redis tidak ada**  
-   Hanya handle local disk `.cache/`. `tw cache enable remote` disebutkan di roadmap v5.0 tapi tidak diimplementasi.
+9. ~~**tw cache — remote S3/Redis tidak ada**~~ ✅ **STABIL**  
+   Helper remote cache (`scripts/v45/cache.{ts,mjs}`) sekarang mendukung `enable/disable/status`, `doctor`, `export`, serta `push/pull remote` (snapshot payload via `.tw-cache/remote-store/*`). Smoke test (`npm run test:cache` / `scripts/v45/cache.test.mjs`) sudah diintegrasikan ke validation gate dengan coverage provider/URL Redis, parity entrypoint TS, roundtrip push/pull, dan command-presence checks di TS+MJS.
 
-10. **tw sync pull --from=s3:// — tidak ada AWS SDK**  
-    S3 diimplementasikan sebagai HTTP fetch ke endpoint. Tidak ada signature, tidak bisa pakai private bucket.
+10. ~~**tw sync pull --from=s3:// — tidak ada AWS SDK**~~ ✅ **STABIL**  
+    Support AWS SDK opsional (`@aws-sdk/client-s3`) untuk private bucket sudah ada, dan saat SDK tidak tersedia tetap ada fallback HTTP endpoint dengan error guidance. Smoke test sync helper (`npm run test:sync`) serta command checks (`pull/push`) sudah ikut validation gate untuk entrypoint TS+MJS.
 
-11. **packages/shared/src/generated/ tidak ada**  
-    `scripts/generate-json-schemas.ts` sudah ada tapi `native/json-schemas/` (input) tidak ada karena binary export-schemas Rust belum dibuat.
+11. ~~**packages/shared/src/generated/ tidak ada**~~ ✅ **STABIL**  
+    Direktori generated + `index.ts` placeholder sudah ada, generator sekarang juga verifikasi drift (`--check`) termasuk `index.ts`, mendeteksi file schema stale, auto-clean stale artifacts saat generate, dan check drift sudah masuk validation gate.
 
 12. **LSP — 3 fitur belum + gRPC pending**  
     Go to Definition, Rename Symbol, Code Actions belum ada. gRPC cluster protocol Sprint 9+ planned.
 
-13. **artifacts/validation-report.json tidak pernah di-generate**  
-    `health-summary.ts` butuh file ini sebagai input. Dependency circular — dua-duanya tidak pernah jalan.
+13. ~~**artifacts/validation-report.json tidak pernah di-generate**~~ ✅ **STABIL**  
+    `final-report.ts` sekarang langsung menghasilkan `validation-report.json` dan `health-summary.json`, sekaligus menjalankan aggregated gate smoke suite (`npm run test:gate`).
 
-14. **tw split — atomic CSS map terbatas**  
-    Arbitrary values (`w-[340px]`, `grid-cols-3`, dll) tidak menghasilkan CSS rule. Integrasi `@tailwindcss/postcss` planned v4.9.1.
+14. ~~**tw split — atomic CSS map terbatas**~~ ✅ **STABIL**  
+    Fallback mapper sekarang mencakup `grid-cols/rows`, `col/row-span`, arbitrary size (`w/h/min/max-*`), spacing (`p/m*`), inset, `gap-*`, `translate-*`, `z-*`, `opacity-*`, dan `rounded-*`. Integrasi penuh `@tailwindcss/postcss` tetap planned v4.9.1, namun jalur fallback route-css sudah operasional.
 
-15. **tw optimize — partial eval hanya 2 args**  
-    `twMerge('a', 'b', 'c')` dengan 3+ args tidak di-pre-compute. Target fix v4.9.1.
+15. ~~**tw optimize — partial eval hanya 2 args**~~ ✅ **STABIL**  
+    Static `twMerge('a','b','c',...)` sekarang bisa di-pre-compute untuk 3+ literal args, call mixed/dynamic tetap di-skip aman.
 
 16. **DevTools — trace reusable belum ada**  
     Dari execution log: "Jangan tandai devtools traces selesai sampai ada panel/flow aktual dan coverage test." Panel `TracePanel` fetch dari dashboard HTTP — tidak terintegrasi langsung ke compiler/scanner pipeline.
@@ -155,28 +175,28 @@ Prerequisite untuk seluruh auto-generate `.d.ts` pipeline.
 | QA #22 | Adaptive thread pool threshold belum | Rust | Overhead small workload |
 | QA #24 | `tsconfig` path alias vs workspace build conflict | `tsconfig.base.json` | DTS pull source |
 | QA #25 | `'use client'` detection example app | examples/ | RSC boundary salah |
-| QA #27 | `TWS_DISABLE_NATIVE` tidak dikenali | test scripts | Fallback test invalid |
-| QA #30 | `test/fixtures/generate.js` CJS di ESM | test/fixtures/ | Fail di ESM mode |
-| QA #31 | `reverseLookup.ts` manual `lastIndex` | engine | Skip/re-match bug |
-| QA #32 | ID generator race condition | `cssToIr.ts:40` | Concurrent corrupt |
-| QA #33 | `reverseLookup.ts` `ParsedCache` tidak clear | engine | Memory leak |
+| QA #27 | `TWS_DISABLE_NATIVE` tidak dikenali | test scripts | ✅ Stabilized |
+| QA #30 | `test/fixtures/generate.js` CJS di ESM | test/fixtures/ | ✅ Stabilized |
+| QA #31 | `reverseLookup.ts` manual `lastIndex` | engine | ✅ Stabilized |
+| QA #32 | ID generator race condition | `cssToIr.ts:40` | ✅ Stabilized |
+| QA #33 | `reverseLookup.ts` `ParsedCache` tidak clear | engine | ✅ Stabilized |
 | QA #34 | Script inconsistency antar packages | `package.json` scripts | CI tidak reliable |
-| C-20 #3 | State API inject style runtime → CSP/SSR unsafe | `stateEngine` | Production unsafe |
+| C-20 #3 | State API inject style runtime → CSP/SSR unsafe | `stateEngine` | ✅ Stabilized (prod default-off + CSP nonce required + SSR path) |
 | C-20 #17 | `process.exit(0)` di test → false green CI | compiler test | CI misleading |
-| C-20 #18 | Status "Production-ready" tapi type `any` | docs/ | Definisi done ambigu |
+| C-20 #18 | Status "Production-ready" tapi type `any` | docs/ | ✅ Type `any` utama sudah diganti typed generic |
 | C-20 #19 | CLI `--help` tampil command belum bisa dipakai | `program.ts` | UX misleading |
 
 ## 📊 Grand Total
 
 | Kategori | Jumlah |
 |---|---:|
-| Broken / tidak bisa jalan | 6 |
-| Partial / setengah jalan | 12 |
+| Broken / tidak bisa jalan | 0 (6 sudah distabilkan) |
+| Partial / setengah jalan | 8 |
 | Belum dimulai — Plan/Wave besar | 11 area |
 | JS fallback code belum dihapus | ~563 baris di 11 file |
 | Unchecked di `PLAN.md` | 50 |
 | Unchecked di monorepo checklist | 41 |
 | Sprint 9+/10+ backlog | 12+ item |
-| Bug terdokumentasi belum fix | 15 |
+| Bug terdokumentasi belum fix | 7 (8 sudah stabil) |
 | any type belum dieliminasi | 145 occurrences |
 | let belum dikonversi | 32 declarations |

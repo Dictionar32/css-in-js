@@ -35,6 +35,8 @@ let hasWarnedStateRuntimeInjection = false
 declare global {
   interface Window {
     __TW_STATE_REGISTRY__?: typeof stateRegistry
+    __TW_CSP_NONCE__?: string
+    __TW_BATCHED_INJECT__?: (css: string) => void
   }
 }
 
@@ -178,8 +180,9 @@ function twClassesToCss(classes: string): string {
 
 function injectStateStyles(id: string, state: StateConfig): void {
   if (typeof document === "undefined") return
+  const isProduction = process.env.NODE_ENV === "production"
   const runtimeInjectionAllowed =
-    process.env.NODE_ENV !== "production" ||
+    !isProduction ||
     process.env.TWS_STATE_RUNTIME_INJECT === "1" ||
     process.env.TWS_STATE_RUNTIME_INJECT === "true"
 
@@ -196,6 +199,22 @@ function injectStateStyles(id: string, state: StateConfig): void {
 
   const styleId = `tw-state-${id}`
   if (document.getElementById(styleId)) return // already injected
+  const nonce =
+    (typeof window !== "undefined" && window.__TW_CSP_NONCE__) ||
+    document.querySelector("meta[name='csp-nonce']")?.getAttribute("content") ||
+    document.querySelector("meta[property='csp-nonce']")?.getAttribute("content")
+
+  if (isProduction && !nonce) {
+    if (!hasWarnedStateRuntimeInjection) {
+      hasWarnedStateRuntimeInjection = true
+      console.warn(
+        "[tailwind-styled-v4] Runtime state style injection in production requires CSP nonce. " +
+          "Set window.__TW_CSP_NONCE__ or provide <meta name='csp-nonce' content='...'>, " +
+          "or use SSR pre-generated CSS via generateStateCss."
+      )
+    }
+    return
+  }
 
   const rules = Object.entries(state)
     .map(([stateName, classes]) => {
@@ -206,20 +225,20 @@ function injectStateStyles(id: string, state: StateConfig): void {
 
   if (rules.length === 0) return
 
-  // Try batched injector first (available when runtime-css is installed)
-  try {
-    const { batchedInject } = require("@tailwind-styled/runtime-css/batched") as {
-      batchedInject: (css: string) => void
-    }
+  // Try batched injector first (if runtime-css bridge is registered on window)
+  const batchedInject =
+    typeof window !== "undefined" ? window.__TW_BATCHED_INJECT__ : undefined
+  if (typeof batchedInject === "function") {
     for (const rule of rules) batchedInject(rule)
     return
-  } catch {
-    // Fallback: per-element style tag (original behavior)
   }
 
   const style = document.createElement("style")
   style.id = styleId
   style.setAttribute("data-tw-state", id)
+  if (nonce) {
+    style.setAttribute("nonce", nonce)
+  }
   style.textContent = rules.join("\n")
   document.head.appendChild(style)
 }

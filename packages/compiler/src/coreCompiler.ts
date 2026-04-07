@@ -119,34 +119,35 @@ class CompilerCore {
 
   private runDeadStyleElimination(classes: string[]): string {
     if (classes.length === 0) return ""
+    const uniqueClasses = Array.from(new Set(classes))
+    let filteredClasses = uniqueClasses
 
     const native = getNativeBridge()
 
     if (native?.analyzeClassesNative) {
       try {
-        const filesJson = JSON.stringify([{ file: "compiled", classes }])
+        const filesJson = JSON.stringify([{ file: "compiled", classes: uniqueClasses }])
         const analysis = native.analyzeClassesNative(filesJson, process.cwd(), 0)
 
         if (analysis?.safelist) {
-          const deadClasses = new Set<string>()
           const safelistSet = new Set(analysis.safelist)
-
-          for (const cls of classes) {
-            if (!safelistSet.has(cls)) {
-              deadClasses.add(cls)
-            }
-          }
-
-          if (deadClasses.size > 0) {
-            return ""
-          }
+          filteredClasses = uniqueClasses.filter((cls) => safelistSet.has(cls))
         }
       } catch (err) {
         console.debug("[deadStyleElimination] native analyze failed, skipping:", (err as Error).message ?? err)
       }
     }
 
-    return ""
+    if (filteredClasses.length === 0) return ""
+
+    try {
+      const { compileCssFromClasses } = require("./cssCompiler") as typeof import("./cssCompiler")
+      const compiled = compileCssFromClasses(filteredClasses)
+      return compiled?.css ?? ""
+    } catch (err) {
+      console.debug("[deadStyleElimination] css compile failed, skipping:", (err as Error).message ?? err)
+      return ""
+    }
   }
 
   private nativeStep(ctx: CompileContextExtended): void {

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import type { RuleIR, SourceLocation } from "./ir"
 import { getNativeEngineBinding } from "./native-bridge"
 
@@ -26,14 +27,31 @@ interface ParsedRule {
   isOverride: boolean
 }
 
+interface ParsedCacheEntry {
+  sourceCss: string
+  rules: ParsedRule[]
+}
+
 export class ReverseLookup {
-  private parsedCache: Map<string, ParsedRule[]> = new Map()
+  private parsedCache: Map<string, ParsedCacheEntry[]> = new Map()
   private static readonly MAX_CACHE_SIZE = 1000
+  private static readonly CACHE_KEY_PREFIX = "css:"
+
+  private buildCacheKey(css: string): string {
+    const digest = createHash("sha1").update(css).digest("hex")
+    return `${ReverseLookup.CACHE_KEY_PREFIX}${css.length}:${digest}`
+  }
+
+  clearCache(): void {
+    this.parsedCache.clear()
+  }
 
   private parseCSS(css: string): ParsedRule[] {
-    const cached = this.parsedCache.get(css)
+    const cacheKey = this.buildCacheKey(css)
+    const cachedEntries = this.parsedCache.get(cacheKey)
+    const cached = cachedEntries?.find((entry) => entry.sourceCss === css)
     if (cached) {
-      return cached
+      return cached.rules
     }
 
     // Gunakan Rust native parser jika tersedia (regex lebih cepat, no GC)
@@ -54,11 +72,7 @@ export class ReverseLookup {
           variants: r.variants,
           isOverride: false,
         }))
-        if (this.parsedCache.size >= ReverseLookup.MAX_CACHE_SIZE) {
-          const firstKey = this.parsedCache.keys().next().value
-          if (firstKey !== undefined) this.parsedCache.delete(firstKey)
-        }
-        this.parsedCache.set(css, rules)
+        this.insertIntoCache(cacheKey, css, rules)
         return rules
       }
     } catch { /* fallback to JS */ }
@@ -139,14 +153,20 @@ export class ReverseLookup {
       columnState.offset = lineEnd
     }
 
-    // Evict oldest entry if cache is full
-    if (this.parsedCache.size >= ReverseLookup.MAX_CACHE_SIZE) {
+    this.insertIntoCache(cacheKey, css, rules)
+    return rules
+  }
+
+  private insertIntoCache(cacheKey: string, sourceCss: string, rules: ParsedRule[]): void {
+    if (!this.parsedCache.has(cacheKey) && this.parsedCache.size >= ReverseLookup.MAX_CACHE_SIZE) {
       const firstKey = this.parsedCache.keys().next().value
       if (firstKey !== undefined) this.parsedCache.delete(firstKey)
     }
 
-    this.parsedCache.set(css, rules)
-    return rules
+    const existingEntries = this.parsedCache.get(cacheKey) ?? []
+    const withoutDuplicateSource = existingEntries.filter((entry) => entry.sourceCss !== sourceCss)
+    withoutDuplicateSource.push({ sourceCss, rules })
+    this.parsedCache.set(cacheKey, withoutDuplicateSource)
   }
 
   private findClosingBrace(css: string, start: number): number {

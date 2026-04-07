@@ -37,10 +37,14 @@ export function mergeClassesStatic(classes: string): string {
  */
 export function normalizeClasses(raw: string): string {
   // Gunakan Rust native jika tersedia (lebih cepat, O(n) HashSet dedup)
-  const native = getNativeBridge()
-  if (native?.normalizeAndDedupClassesNative) {
-    const result = native.normalizeAndDedupClassesNative(raw)
-    return result?.normalized ?? raw.replace(/\s+/g, " ").trim()
+  try {
+    const native = getNativeBridge()
+    if (native?.normalizeAndDedupClassesNative) {
+      const result = native.normalizeAndDedupClassesNative(raw)
+      return result?.normalized ?? raw.replace(/\s+/g, " ").trim()
+    }
+  } catch {
+    // Native unavailable, fall back to JS normalization.
   }
   // JS fallback
   return raw

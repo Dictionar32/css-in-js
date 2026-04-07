@@ -68,8 +68,14 @@ function attachExtend<P extends object>(
   base: string,
   config: string | ComponentConfig
 ): TwStyledComponent<P> {
-  component.extend = (strings: TemplateStringsArray) => {
-    const extra = strings.raw.join("").trim().replace(/\s+/g, " ")
+  component.extend = (strings: TemplateStringsArray, ...exprs: unknown[]) => {
+    const literal = strings.reduce((acc, part, index) => {
+      const expr = index < exprs.length ? exprs[index] : ""
+      const exprText =
+        typeof expr === "string" || typeof expr === "number" ? String(expr) : ""
+      return acc + part + exprText
+    }, "")
+    const extra = literal.trim().replace(/\s+/g, " ")
     const merged = twMerge(base, extra)
     const extended = createComponent<P>(
       originalTag,
