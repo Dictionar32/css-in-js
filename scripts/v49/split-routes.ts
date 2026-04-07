@@ -35,11 +35,107 @@ function utilityToDeclaration(className: string): string | null {
     return cssProp ? `${cssProp}:${value};` : null
   }
 
+  const spacingArbitrary = className.match(/^(p|px|py|pt|pr|pb|pl|m|mx|my|mt|mr|mb|ml)-\[(.+)\]$/)
+  if (spacingArbitrary) {
+    const [, prop, value] = spacingArbitrary
+    const map: Record<string, string[]> = {
+      p: ["padding"],
+      px: ["padding-left", "padding-right"],
+      py: ["padding-top", "padding-bottom"],
+      pt: ["padding-top"],
+      pr: ["padding-right"],
+      pb: ["padding-bottom"],
+      pl: ["padding-left"],
+      m: ["margin"],
+      mx: ["margin-left", "margin-right"],
+      my: ["margin-top", "margin-bottom"],
+      mt: ["margin-top"],
+      mr: ["margin-right"],
+      mb: ["margin-bottom"],
+      ml: ["margin-left"],
+    }
+    const cssProps = map[prop]
+    if (!cssProps) return null
+    return cssProps.map((cssProp) => `${cssProp}:${value};`).join("")
+  }
+
+  const insetArbitrary = className.match(/^(inset|inset-x|inset-y|top|right|bottom|left)-\[(.+)\]$/)
+  if (insetArbitrary) {
+    const [, prop, value] = insetArbitrary
+    const map: Record<string, string[]> = {
+      inset: ["top", "right", "bottom", "left"],
+      "inset-x": ["left", "right"],
+      "inset-y": ["top", "bottom"],
+      top: ["top"],
+      right: ["right"],
+      bottom: ["bottom"],
+      left: ["left"],
+    }
+    const cssProps = map[prop]
+    if (!cssProps) return null
+    return cssProps.map((cssProp) => `${cssProp}:${value};`).join("")
+  }
+
   const gridColsMatch = className.match(/^grid-cols-(\d+)$/)
   if (gridColsMatch) {
     const count = Number(gridColsMatch[1])
     if (count > 0) return `grid-template-columns:repeat(${count},minmax(0,1fr));`
   }
+
+  const gridRowsMatch = className.match(/^grid-rows-(\d+)$/)
+  if (gridRowsMatch) {
+    const count = Number(gridRowsMatch[1])
+    if (count > 0) return `grid-template-rows:repeat(${count},minmax(0,1fr));`
+  }
+
+  const gridArbitrary = className.match(/^(grid-cols|grid-rows)-\[(.+)\]$/)
+  if (gridArbitrary) {
+    const [, prop, value] = gridArbitrary
+    return prop === "grid-cols"
+      ? `grid-template-columns:${value};`
+      : `grid-template-rows:${value};`
+  }
+
+  const spanMatch = className.match(/^(col|row)-span-(\d+)$/)
+  if (spanMatch) {
+    const [, axis, countRaw] = spanMatch
+    const count = Number(countRaw)
+    if (count > 0) {
+      return axis === "col"
+        ? `grid-column:span ${count}/span ${count};`
+        : `grid-row:span ${count}/span ${count};`
+    }
+  }
+
+  const gapArbitrary = className.match(/^(gap|gap-x|gap-y)-\[(.+)\]$/)
+  if (gapArbitrary) {
+    const [, prop, value] = gapArbitrary
+    const map: Record<string, string[]> = {
+      gap: ["gap"],
+      "gap-x": ["column-gap"],
+      "gap-y": ["row-gap"],
+    }
+    const cssProps = map[prop]
+    if (!cssProps) return null
+    return cssProps.map((cssProp) => `${cssProp}:${value};`).join("")
+  }
+
+  const transformArbitrary = className.match(/^(translate-x|translate-y)-\[(.+)\]$/)
+  if (transformArbitrary) {
+    const [, axis, value] = transformArbitrary
+    return axis === "translate-x"
+      ? `--tw-translate-x:${value};transform:translate(var(--tw-translate-x),var(--tw-translate-y,0));`
+      : `--tw-translate-y:${value};transform:translate(var(--tw-translate-x,0),var(--tw-translate-y));`
+  }
+
+  const zArbitrary = className.match(/^z-\[(.+)\]$/)
+  if (zArbitrary) return `z-index:${zArbitrary[1]};`
+
+  const opacityArbitrary = className.match(/^opacity-\[(.+)\]$/)
+  if (opacityArbitrary) return `opacity:${opacityArbitrary[1]};`
+
+  const roundedArbitrary = className.match(/^rounded-\[(.+)\]$/)
+  if (roundedArbitrary) return `border-radius:${roundedArbitrary[1]};`
 
   return null
 }

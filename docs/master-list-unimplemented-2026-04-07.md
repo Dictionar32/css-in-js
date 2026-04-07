@@ -46,28 +46,28 @@ Item berikut **sudah distabilkan** dibanding snapshot awal:
 ## 🟠 PARTIAL — Ada tapi setengah jalan
 
 7. ~~**Compiler v5 — 3 dari 5 phase belum**~~ ✅ **STABIL**  
-   Phase 3 DSE **sudah ter-wire** di core pipeline (baseline), Phase 4 tests **sudah jalan** (class merger + dead style eliminator), dan Phase 5 punya folder proxy dedicated (`examples/nextjs-v5`, `examples/vite-v5`) yang menarget example baseline (`next-js-app`, `vite-react`).
+   Phase 3 DSE **sudah ter-wire** di core pipeline (baseline), Phase 4 tests **sudah jalan** (class merger + dead style eliminator) dan sekarang ikut tervalidasi di release gate (`npm run test:compiler`), serta Phase 5 punya folder proxy dedicated (`examples/nextjs-v5`, `examples/vite-v5`) yang menarget example baseline (`next-js-app`, `vite-react`).
 
 8. ~~**extend() — tidak bisa extend + add variant sekaligus**~~ ✅ **STABIL**  
    Chaining `Button.extend\`...\`.withVariants(...)` sudah aktif, dan `extend` menerima template expression sederhana.
 
-9. **tw cache — remote S3/Redis tidak ada**  
-   Hanya handle local disk `.cache/`. `tw cache enable remote` disebutkan di roadmap v5.0 tapi tidak diimplementasi.
+9. ~~**tw cache — remote S3/Redis tidak ada**~~ ✅ **STABIL**  
+   Helper remote cache (`scripts/v45/cache.{ts,mjs}`) sekarang mendukung `enable/disable/status`, `doctor`, `export`, serta `push/pull remote` (snapshot payload via `.tw-cache/remote-store/*`). Smoke test (`npm run test:cache` / `scripts/v45/cache.test.mjs`) sudah diintegrasikan ke validation gate dengan coverage provider/URL Redis, parity entrypoint TS, roundtrip push/pull, dan command-presence checks di TS+MJS.
 
-10. **tw sync pull --from=s3:// — tidak ada AWS SDK**  
-    Sekarang ada support AWS SDK opsional (`@aws-sdk/client-s3`) untuk private bucket. Jika SDK tidak tersedia, fallback HTTP endpoint tetap ada.
+10. ~~**tw sync pull --from=s3:// — tidak ada AWS SDK**~~ ✅ **STABIL**  
+    Support AWS SDK opsional (`@aws-sdk/client-s3`) untuk private bucket sudah ada, dan saat SDK tidak tersedia tetap ada fallback HTTP endpoint dengan error guidance. Smoke test sync helper (`npm run test:sync`) serta command checks (`pull/push`) sudah ikut validation gate untuk entrypoint TS+MJS.
 
-11. ~~**packages/shared/src/generated/ tidak ada**~~ 🟠 **PARTIAL STABIL**  
-    Direktori generated + `index.ts` placeholder sudah ada. Full auto-sync masih menunggu output `native/json-schemas/` dari Rust export-schemas.
+11. ~~**packages/shared/src/generated/ tidak ada**~~ ✅ **STABIL**  
+    Direktori generated + `index.ts` placeholder sudah ada, generator sekarang juga verifikasi drift (`--check`) termasuk `index.ts`, mendeteksi file schema stale, auto-clean stale artifacts saat generate, dan check drift sudah masuk validation gate.
 
 12. **LSP — 3 fitur belum + gRPC pending**  
     Go to Definition, Rename Symbol, Code Actions belum ada. gRPC cluster protocol Sprint 9+ planned.
 
 13. ~~**artifacts/validation-report.json tidak pernah di-generate**~~ ✅ **STABIL**  
-    `final-report.ts` sekarang langsung menghasilkan `validation-report.json` dan `health-summary.json`.
+    `final-report.ts` sekarang langsung menghasilkan `validation-report.json` dan `health-summary.json`, sekaligus menjalankan aggregated gate smoke suite (`npm run test:gate`).
 
-14. **tw split — atomic CSS map terbatas**  
-    Fallback mapper sekarang sudah cover `grid-cols-*` dan arbitrary size (`w-[...]`, `h-[...]`, `min/max-*`). Integrasi penuh `@tailwindcss/postcss` masih planned v4.9.1.
+14. ~~**tw split — atomic CSS map terbatas**~~ ✅ **STABIL**  
+    Fallback mapper sekarang mencakup `grid-cols/rows`, `col/row-span`, arbitrary size (`w/h/min/max-*`), spacing (`p/m*`), inset, `gap-*`, `translate-*`, `z-*`, `opacity-*`, dan `rounded-*`. Integrasi penuh `@tailwindcss/postcss` tetap planned v4.9.1, namun jalur fallback route-css sudah operasional.
 
 15. ~~**tw optimize — partial eval hanya 2 args**~~ ✅ **STABIL**  
     Static `twMerge('a','b','c',...)` sekarang bisa di-pre-compute untuk 3+ literal args, call mixed/dynamic tetap di-skip aman.

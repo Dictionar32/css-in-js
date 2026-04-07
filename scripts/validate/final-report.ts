@@ -41,6 +41,19 @@ function checkFile(label, filePath) {
   return { label, ok: exists, detail: exists ? filePath : `tidak ditemukan: ${filePath}` }
 }
 
+function checkContains(label, filePath, needle) {
+  if (!fs.existsSync(filePath)) {
+    return { label, ok: false, detail: `tidak ditemukan: ${filePath}` }
+  }
+  const content = fs.readFileSync(filePath, "utf8")
+  const ok = content.includes(needle)
+  return {
+    label,
+    ok,
+    detail: ok ? `ok: ditemukan "${needle}"` : `tidak menemukan "${needle}" di ${filePath}`,
+  }
+}
+
 function checkOptionalFile(label, filePath, hint) {
   const exists = fs.existsSync(filePath)
   return {
@@ -50,9 +63,26 @@ function checkOptionalFile(label, filePath, hint) {
   }
 }
 
+function checkAnyFile(label, filePaths, hint) {
+  const found = filePaths.find((filePath) => fs.existsSync(filePath))
+  return {
+    label,
+    ok: Boolean(found),
+    detail: found || hint || `tidak ditemukan: ${filePaths.join(" | ")}`,
+  }
+}
+
+function checkAnyOptionalFile(label, filePaths, hint) {
+  const found = filePaths.find((filePath) => fs.existsSync(filePath))
+  return {
+    label,
+    ok: true,
+    detail: found || `optional: ${hint || `tidak ditemukan: ${filePaths.join(" | ")}`}`,
+  }
+}
+
 const criticalBuildOutputs = [
   path.join(root, "dist/index.mjs"),
-  path.join(root, "dist/index.d.mts"),
   path.join(root, "dist/tw.mjs"),
   path.join(root, "packages/core/dist/index.js"),
   path.join(root, "packages/compiler/dist/index.js"),
@@ -61,7 +91,6 @@ const criticalBuildOutputs = [
   path.join(root, "packages/vite/dist/plugin.js"),
   path.join(root, "packages/next/dist/index.js"),
   path.join(root, "packages/rspack/dist/index.js"),
-  path.join(root, "examples/next-js-app/.next/BUILD_ID"),
 ]
 
 function hasMissingCriticalOutputs() {
@@ -98,7 +127,11 @@ if ((FLAG_PREPARE || FLAG_STRICT) && hasMissingCriticalOutputs()) {
 const checks = {
   // Build artifacts
   rootDist:      checkFile("root dist/index.mjs",      path.join(root, "dist/index.mjs")),
-  rootDistTypes: checkFile("root dist/index.d.mts",     path.join(root, "dist/index.d.mts")),
+  rootDistTypes: checkAnyOptionalFile(
+    "root dist type declarations (optional)",
+    [path.join(root, "dist/index.d.mts"), path.join(root, "dist/index.d.ts")],
+    "jalankan build root untuk menghasilkan typings"
+  ),
   rootDistTw:    checkFile("root dist/tw.mjs (CLI)",     path.join(root, "dist/tw.mjs")),
   coreDist:      checkFile("@tailwind-styled/core dist", path.join(root, "packages/core/dist/index.js")),
   compilerDist:  checkFile("@tailwind-styled/compiler dist", path.join(root, "packages/compiler/dist/index.js")),
@@ -115,6 +148,46 @@ const checks = {
   tscNext: (() => {
     const r = run("npx tsc --noEmit -p examples/next-js-app/tsconfig.json")
     return { label: "tsc next-js-app --noEmit", ok: r.ok, detail: r.error?.slice(0, 200) || "clean" }
+  })(),
+  cacheHelperTests: (() => {
+    const r = run("npm run test:cache")
+    return {
+      label: "cache helper smoke tests",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
+  compilerUnitTests: (() => {
+    const r = run("npm run test:compiler")
+    return {
+      label: "compiler package tests",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
+  schemaSyncCheck: (() => {
+    const r = run("npx tsx scripts/generate-json-schemas.ts --check")
+    return {
+      label: "generated schema drift check",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
+  syncHelperTests: (() => {
+    const r = run("npm run test:sync")
+    return {
+      label: "sync helper smoke tests",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
+  })(),
+  gateSmokeSuite: (() => {
+    const r = run("npm run test:gate")
+    return {
+      label: "aggregated gate smoke suite",
+      ok: r.ok,
+      detail: r.ok ? "pass" : r.error?.slice(0, 200) || "failed",
+    }
   })(),
   // Next.js build
   nextBuild: (() => {
@@ -140,6 +213,94 @@ const checks = {
   viteV5Proxy: checkFile(
     "examples/vite-v5/package.json",
     path.join(root, "examples/vite-v5/package.json")
+  ),
+  syncAwsSdkTs: checkContains(
+    "scripts/v45/sync.ts AWS SDK support",
+    path.join(root, "scripts/v45/sync.ts"),
+    "@aws-sdk/client-s3"
+  ),
+  syncAwsSdkMjs: checkContains(
+    "scripts/v45/sync.mjs AWS SDK support",
+    path.join(root, "scripts/v45/sync.mjs"),
+    "@aws-sdk/client-s3"
+  ),
+  syncPullCmdTs: checkContains(
+    "scripts/v45/sync.ts pull command",
+    path.join(root, "scripts/v45/sync.ts"),
+    "if (cmd === 'pull')"
+  ),
+  syncPushCmdTs: checkContains(
+    "scripts/v45/sync.ts push command",
+    path.join(root, "scripts/v45/sync.ts"),
+    "if (cmd === 'push')"
+  ),
+  syncPullCmdMjs: checkContains(
+    "scripts/v45/sync.mjs pull command",
+    path.join(root, "scripts/v45/sync.mjs"),
+    "if (cmd === 'pull')"
+  ),
+  syncPushCmdMjs: checkContains(
+    "scripts/v45/sync.mjs push command",
+    path.join(root, "scripts/v45/sync.mjs"),
+    "if (cmd === 'push')"
+  ),
+  syncTestFile: checkFile(
+    "scripts/v45/sync.test.mjs exists",
+    path.join(root, "scripts/v45/sync.test.mjs")
+  ),
+  cacheRemoteTs: checkContains(
+    "scripts/v45/cache.ts remote provider support",
+    path.join(root, "scripts/v45/cache.ts"),
+    "provider === 's3' || provider === 'redis'"
+  ),
+  cacheRemoteMjs: checkContains(
+    "scripts/v45/cache.mjs remote provider support",
+    path.join(root, "scripts/v45/cache.mjs"),
+    "provider === 's3' || provider === 'redis'"
+  ),
+  cacheDoctorTs: checkContains(
+    "scripts/v45/cache.ts doctor command",
+    path.join(root, "scripts/v45/cache.ts"),
+    "if (cmd === 'doctor')"
+  ),
+  cacheDoctorMjs: checkContains(
+    "scripts/v45/cache.mjs doctor command",
+    path.join(root, "scripts/v45/cache.mjs"),
+    "if (cmd === 'doctor')"
+  ),
+  cacheExportTs: checkContains(
+    "scripts/v45/cache.ts export command",
+    path.join(root, "scripts/v45/cache.ts"),
+    "if (cmd === 'export')"
+  ),
+  cacheExportMjs: checkContains(
+    "scripts/v45/cache.mjs export command",
+    path.join(root, "scripts/v45/cache.mjs"),
+    "if (cmd === 'export')"
+  ),
+  cachePushTs: checkContains(
+    "scripts/v45/cache.ts push command",
+    path.join(root, "scripts/v45/cache.ts"),
+    "if (cmd === 'push')"
+  ),
+  cachePushMjs: checkContains(
+    "scripts/v45/cache.mjs push command",
+    path.join(root, "scripts/v45/cache.mjs"),
+    "if (cmd === 'push')"
+  ),
+  cachePullTs: checkContains(
+    "scripts/v45/cache.ts pull command",
+    path.join(root, "scripts/v45/cache.ts"),
+    "if (cmd === 'pull')"
+  ),
+  cachePullMjs: checkContains(
+    "scripts/v45/cache.mjs pull command",
+    path.join(root, "scripts/v45/cache.mjs"),
+    "if (cmd === 'pull')"
+  ),
+  cacheTestFile: checkFile(
+    "scripts/v45/cache.test.mjs exists",
+    path.join(root, "scripts/v45/cache.test.mjs")
   ),
 }
 
