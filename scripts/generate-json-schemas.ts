@@ -27,6 +27,7 @@ const ROOT = path.resolve(__dirname, "..")
 const SCHEMA_INPUT_DIR = path.resolve(ROOT, "native", "json-schemas")
 const GENERATED_DIR = path.resolve(ROOT, "packages", "shared", "src", "generated")
 const HEADER = "/* Auto-generated from Rust JSON Schema — do not edit manually */\n"
+const INDEX_PATH = path.join(GENERATED_DIR, "index.ts")
 
 const CHECK_MODE = process.argv.includes("--check")
 
@@ -123,12 +124,25 @@ function generateZodSchema(name, jsonSchema) {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
+  if (!fs.existsSync(GENERATED_DIR)) {
+    fs.mkdirSync(GENERATED_DIR, { recursive: true })
+  }
+
   if (!fs.existsSync(SCHEMA_INPUT_DIR)) {
     console.log(`No JSON Schema input directory found at ${SCHEMA_INPUT_DIR}`)
     console.log("To generate JSON Schemas from Rust, run:")
     console.log("  cargo run --bin export-schemas")
     console.log("")
     console.log("Or manually place JSON Schema files in native/json-schemas/")
+    const placeholder = [
+      HEADER.trimEnd(),
+      "",
+      "// Placeholder index. No Rust JSON Schemas detected yet.",
+      "// Once native/json-schemas/*.json exists, run scripts/generate-json-schemas.ts.",
+      "export {}",
+      "",
+    ].join("\n")
+    fs.writeFileSync(INDEX_PATH, placeholder, "utf-8")
     return
   }
 
@@ -136,15 +150,20 @@ function main() {
 
   if (schemaFiles.length === 0) {
     console.log("No JSON Schema files found in native/json-schemas/")
+    const placeholder = [
+      HEADER.trimEnd(),
+      "",
+      "// Placeholder index. No Rust JSON Schemas detected yet.",
+      "export {}",
+      "",
+    ].join("\n")
+    fs.writeFileSync(INDEX_PATH, placeholder, "utf-8")
     return
-  }
-
-  if (!fs.existsSync(GENERATED_DIR)) {
-    fs.mkdirSync(GENERATED_DIR, { recursive: true })
   }
 
   let changed = 0
   let unchanged = 0
+  const indexExports: string[] = []
 
   for (const file of schemaFiles) {
     const filePath = path.join(SCHEMA_INPUT_DIR, file)
@@ -154,6 +173,7 @@ function main() {
     const name = path.basename(file, ".json")
     const zodSource = generateZodSchema(name, jsonSchema)
     const outPath = path.join(GENERATED_DIR, `${name}.schema.ts`)
+    indexExports.push(`export * from "./${name}.schema"`)
 
     if (CHECK_MODE) {
       if (fs.existsSync(outPath)) {
@@ -181,6 +201,10 @@ function main() {
     } else {
       console.log(`All ${unchanged} generated schema(s) are up to date.`)
     }
+  } else {
+    const indexSource = [HEADER.trimEnd(), "", ...indexExports.sort(), ""].join("\n")
+    fs.writeFileSync(INDEX_PATH, indexSource, "utf-8")
+    console.log(`Generated: ${INDEX_PATH}`)
   }
 }
 

@@ -1,0 +1,9 @@
+{
+  "name": "vite-v5-proxy",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix ../vite-react",
+    "build": "npm run build --prefix ../vite-react",
+    "test": "npm run test --prefix ../vite-react"
+  }
+}

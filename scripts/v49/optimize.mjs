@@ -36,18 +36,23 @@ let result = source
 let stats = { deduped: 0, compiled: 0, savedBytes: 0 }
 
 function foldStaticTwMergeCall(code) {
-  const twMergeStaticRe = /twMerge\(\s*(['"`])([^'"`\\]*(?:\\.[^'"`\\]*)*)\1(?:\s*,\s*(['"`])([^'"`\\]*(?:\\.[^'"`\\]*)*)\3)+\s*\)/g
-  return code.replace(twMergeStaticRe, (full) => {
-    const args = []
-    const argRe = /(['"`])([^'"`\\]*(?:\\.[^'"`\\]*)*)\1/g
-    let argMatch
-    while ((argMatch = argRe.exec(full)) !== null) {
-      args.push(argMatch[2])
-    }
-    if (args.length < 2) return full
+  const twMergeCallRe = /twMerge\(([\s\S]*?)\)/g
+  return code.replace(twMergeCallRe, (full, callArgs) => {
+    const argMatches = Array.from(
+      callArgs.matchAll(/(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g),
+      (match) => match[2]
+    )
+    if (argMatches.length < 2) return full
+
+    const onlyStringLiteralsAndCommas = callArgs
+      .replace(/(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g, "")
+      .replace(/[\s,]/g, "")
+      .length === 0
+    if (!onlyStringLiteralsAndCommas) return full
+
     const merged = []
     const seen = new Set()
-    for (const arg of args) {
+    for (const arg of argMatches) {
       for (const token of arg.split(/\s+/).filter(Boolean)) {
         if (seen.has(token)) continue
         seen.add(token)

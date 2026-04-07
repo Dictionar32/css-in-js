@@ -15,6 +15,35 @@ const [,, rootArg = '.', outDirArg = 'artifacts/route-css'] = process.argv
 const root   = path.resolve(process.cwd(), rootArg)
 const outDir = path.resolve(process.cwd(), outDirArg)
 
+function escapeClassForSelector(className: string): string {
+  return className.replace(/([^a-zA-Z0-9_-])/g, "\\$1")
+}
+
+function utilityToDeclaration(className: string): string | null {
+  const arbitraryMatch = className.match(/^(w|h|min-w|min-h|max-w|max-h)-\[(.+)\]$/)
+  if (arbitraryMatch) {
+    const [, prop, value] = arbitraryMatch
+    const propMap: Record<string, string> = {
+      w: "width",
+      h: "height",
+      "min-w": "min-width",
+      "min-h": "min-height",
+      "max-w": "max-width",
+      "max-h": "max-height",
+    }
+    const cssProp = propMap[prop]
+    return cssProp ? `${cssProp}:${value};` : null
+  }
+
+  const gridColsMatch = className.match(/^grid-cols-(\d+)$/)
+  if (gridColsMatch) {
+    const count = Number(gridColsMatch[1])
+    if (count > 0) return `grid-template-columns:repeat(${count},minmax(0,1fr));`
+  }
+
+  return null
+}
+
 if (!fs.existsSync(root)) { console.error(`Root not found: ${root}`); process.exit(1) }
 fs.mkdirSync(outDir, { recursive: true })
 
@@ -60,6 +89,17 @@ for (const [route, classes] of routeMap) {
   const outFile  = path.join(outDir, `${safeName}.classes.json`)
   const classList = Array.from(classes).sort()
   fs.writeFileSync(outFile, JSON.stringify({ route, classes: classList }, null, 2))
+  const cssRules = classList
+    .map((cls) => {
+      const declaration = utilityToDeclaration(cls)
+      if (!declaration) return null
+      return `.${escapeClassForSelector(cls)}{${declaration}}`
+    })
+    .filter(Boolean)
+    .join('\n')
+  if (cssRules.length > 0) {
+    fs.writeFileSync(path.join(outDir, `${safeName}.css`), `${cssRules}\n`)
+  }
   manifest[route] = classList.length
 }
 

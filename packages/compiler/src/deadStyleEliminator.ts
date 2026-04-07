@@ -258,8 +258,14 @@ export const eliminateDeadCss = (css: string, deadClasses: Set<string>): string 
         const escaped = cls.replace(/[:/[\].!%]/g, "\\$&")
         return line.includes(`.${escaped}`) || line.includes(`.${cls}`)
       })
+      const hasOpenBrace = line.includes("{")
+      const hasCloseBrace = line.includes("}")
+      const isSingleLineRule = hasOpenBrace && hasCloseBrace
 
-      if (isDead && line.includes("{")) {
+      if (isDead && isSingleLineRule) {
+        return state
+      }
+      if (isDead && hasOpenBrace) {
         return {
           inBlock: true,
           removeBlock: true,
@@ -267,7 +273,7 @@ export const eliminateDeadCss = (css: string, deadClasses: Set<string>): string 
           kept: state.kept,
         }
       }
-      if (line.includes("{") && !line.trim().startsWith("@")) {
+      if (hasOpenBrace && !line.trim().startsWith("@") && !isSingleLineRule) {
         return {
           inBlock: true,
           removeBlock: false,

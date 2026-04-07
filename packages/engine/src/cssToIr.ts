@@ -8,8 +8,6 @@ import {
   PropertyId,
   RuleId,
   type RuleIR,
-  registerPropertyName,
-  registerValueName,
   SelectorId,
   ValueId,
   VariantChainId,
@@ -37,44 +35,44 @@ interface ParsedRule {
 // ID Generator - Factory Pattern (no let!)
 // ─────────────────────────────────────────────────────────────────────────
 
-const idState = {
-  ruleIdCounter: 0,
-  selectorIdCounter: 0,
-  propertyIdCounter: 0,
-  valueIdCounter: 0,
-  layerIdCounter: 0,
-  conditionIdCounter: 0,
-  insertionOrderCounter: 0,
+interface GeneratorState {
+  ruleIdCounter: number
+  selectorIdCounter: number
+  propertyIdCounter: number
+  valueIdCounter: number
+  layerIdCounter: number
+  conditionIdCounter: number
+  insertionOrderCounter: number
+  layerMap: Map<string, LayerId>
+  layerOrderMap: Map<string, number>
 }
 
-const generateRuleId = (): RuleId => new RuleId(idState.ruleIdCounter++)
-const generateSelectorId = (): SelectorId => new SelectorId(idState.selectorIdCounter++)
-const generatePropertyId = (propertyName: string): PropertyId => {
-  const id = new PropertyId(idState.propertyIdCounter++)
-  registerPropertyName(id, propertyName)
-  return id
-}
-const generateValueId = (valueName: string): ValueId => {
-  const id = new ValueId(idState.valueIdCounter++)
-  registerValueName(id, valueName)
-  return id
-}
-const generateLayerId = (): LayerId => new LayerId(idState.layerIdCounter++)
-const generateConditionId = (): ConditionId => new ConditionId(idState.conditionIdCounter++)
-const getNextInsertionOrder = (): number => idState.insertionOrderCounter++
-
-const resetIdGenerator = (): void => {
-  idState.ruleIdCounter = 0
-  idState.selectorIdCounter = 0
-  idState.propertyIdCounter = 0
-  idState.valueIdCounter = 0
-  idState.layerIdCounter = 0
-  idState.conditionIdCounter = 0
-  idState.insertionOrderCounter = 0
+function createGeneratorState(): GeneratorState {
+  return {
+    ruleIdCounter: 0,
+    selectorIdCounter: 0,
+    propertyIdCounter: 0,
+    valueIdCounter: 0,
+    layerIdCounter: 0,
+    conditionIdCounter: 0,
+    insertionOrderCounter: 0,
+    layerMap: new Map<string, LayerId>(),
+    layerOrderMap: new Map<string, number>(),
+  }
 }
 
-const layerMap: Map<string, LayerId> = new Map()
-const layerOrderMap: Map<string, number> = new Map()
+const generateRuleId = (state: GeneratorState): RuleId => new RuleId(state.ruleIdCounter++)
+const generateSelectorId = (state: GeneratorState): SelectorId => new SelectorId(state.selectorIdCounter++)
+const generatePropertyId = (state: GeneratorState, propertyName: string): PropertyId => {
+  return new PropertyId(state.propertyIdCounter++, propertyName)
+}
+const generateValueId = (state: GeneratorState, valueName: string): ValueId => {
+  return new ValueId(state.valueIdCounter++, valueName)
+}
+const generateLayerId = (state: GeneratorState): LayerId => new LayerId(state.layerIdCounter++)
+const generateConditionId = (state: GeneratorState): ConditionId =>
+  new ConditionId(state.conditionIdCounter++)
+const getNextInsertionOrder = (state: GeneratorState): number => state.insertionOrderCounter++
 
 const LAYER_ORDER: Record<string, number> = {
   base: 0,
@@ -83,14 +81,14 @@ const LAYER_ORDER: Record<string, number> = {
   tailwind: 3,
 }
 
-function getOrCreateLayerId(layerName: string): LayerId | null {
-  const existing = layerMap.get(layerName)
+function getOrCreateLayerId(state: GeneratorState, layerName: string): LayerId | null {
+  const existing = state.layerMap.get(layerName)
   if (existing) return existing
 
   const order = LAYER_ORDER[layerName] ?? 4
-  const layerId = generateLayerId()
-  layerMap.set(layerName, layerId)
-  layerOrderMap.set(layerName, order)
+  const layerId = generateLayerId(state)
+  state.layerMap.set(layerName, layerId)
+  state.layerOrderMap.set(layerName, order)
   return layerId
 }
 
@@ -204,10 +202,7 @@ export function parseCssToIr(
   css: string,
   options: ParseCssToIrOptions = {}
 ): { rules: RuleIR[]; classToRuleIds: Map<string, RuleId[]> } {
-  resetIdGenerator()
-
-  layerMap.clear()
-  layerOrderMap.clear()
+  const state = createGeneratorState()
 
   const prefix = options.prefix ?? ""
   const rules: RuleIR[] = []
@@ -220,20 +215,20 @@ export function parseCssToIr(
     const specificity = calculateSpecificity(parsedRule.selector)
 
     const layerName = detectLayerFromSelector(className)
-    const layer = layerName ? getOrCreateLayerId(layerName) : null
-    const layerOrder = layerName ? (layerOrderMap.get(layerName) ?? 4) : 4
+    const layer = layerName ? getOrCreateLayerId(state, layerName) : null
+    const layerOrder = layerName ? (state.layerOrderMap.get(layerName) ?? 4) : 4
 
-    const selectorId = generateSelectorId()
-    const propertyId = generatePropertyId(parsedRule.property)
-    const valueId = generateValueId(parsedRule.value)
+    const selectorId = generateSelectorId(state)
+    const propertyId = generatePropertyId(state, parsedRule.property)
+    const valueId = generateValueId(state, parsedRule.value)
 
     const hasMediaQuery = parsedRule.selector.mediaQuery
-    const conditionId = hasMediaQuery ? generateConditionId() : null
+    const conditionId = hasMediaQuery ? generateConditionId(state) : null
     const conditionResult = hasMediaQuery ? ConditionResult.Unknown : ConditionResult.Unknown
 
     const fingerprint = createFingerprint([className, parsedRule.property, parsedRule.value])
 
-    const ruleId = generateRuleId()
+    const ruleId = generateRuleId(state)
 
     const rule: RuleIR = {
       id: ruleId,
@@ -248,7 +243,7 @@ export function parseCssToIr(
       specificity,
       condition: conditionId,
       conditionResult,
-      insertionOrder: getNextInsertionOrder(),
+      insertionOrder: getNextInsertionOrder(state),
       fingerprint,
       source: {
         file: "",
