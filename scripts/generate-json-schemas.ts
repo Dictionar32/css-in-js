@@ -211,19 +211,6 @@ function main() {
       return
     }
     fs.writeFileSync(INDEX_PATH, PLACEHOLDER_SOURCE, "utf-8")
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     return
   }
 
@@ -231,65 +218,6 @@ function main() {
 
   if (schemaFiles.length === 0) {
     console.log("No JSON Schema files found in native/json-schemas/")
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-
-    const placeholder = [
-      HEADER.trimEnd(),
-      "",
-      "// Placeholder index. No Rust JSON Schemas detected yet.",
-      "export {}",
-      "",
-    ].join("\n")
-    fs.writeFileSync(INDEX_PATH, placeholder, "utf-8")
-
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    if (CHECK_MODE) {
-      const current = fs.existsSync(INDEX_PATH) ? fs.readFileSync(INDEX_PATH, "utf-8") : ""
-      if (current !== PLACEHOLDER_SOURCE) {
-        console.error(`DRIFT: ${INDEX_PATH} differs from placeholder output`)
-        process.exit(1)
-      }
-      console.log("Placeholder index is up to date.")
-      return
-    }
-    fs.writeFileSync(INDEX_PATH, PLACEHOLDER_SOURCE, "utf-8")
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-
-    return
-  }
-
-  let changed = 0
-  let unchanged = 0
-  const indexExports: string[] = []
-
-  const expectedSchemaFiles = new Set<string>()
-
-  const expectedSchemaFiles = new Set<string>()
-
-  const expectedSchemaFiles = new Set<string>()
-
-  const expectedSchemaFiles = new Set<string>()
->>>>>>> theirs
-=======
-  const expectedSchemaFiles = new Set<string>()
->>>>>>> theirs
-=======
-  const expectedSchemaFiles = new Set<string>()
->>>>>>> theirs
-=======
-  const expectedSchemaFiles = new Set<string>()
->>>>>>> theirs
-=======
     if (CHECK_MODE) {
       const current = fs.existsSync(INDEX_PATH) ? fs.readFileSync(INDEX_PATH, "utf-8") : ""
       if (current !== PLACEHOLDER_SOURCE) {
@@ -303,35 +231,10 @@ function main() {
     return
   }
 
-=======
-    return
-  }
-
->>>>>>> theirs
-=======
-    return
-  }
-
->>>>>>> theirs
-=======
-    return
-  }
-
->>>>>>> theirs
   let changed = 0
   let unchanged = 0
   const indexExports: string[] = []
   const expectedSchemaFiles = new Set<string>()
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
   for (const file of schemaFiles) {
     const filePath = path.join(SCHEMA_INPUT_DIR, file)
@@ -342,43 +245,7 @@ function main() {
     const name = path.basename(file, ".json")
     const zodSource = generateZodSchema(name, jsonSchema)
     const outPath = path.join(GENERATED_DIR, `${name}.schema.ts`)
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
     expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-    expectedSchemaFiles.add(path.basename(outPath))
-
-=======
-    expectedSchemaFiles.add(path.basename(outPath))
->>>>>>> theirs
-=======
-    expectedSchemaFiles.add(path.basename(outPath))
->>>>>>> theirs
-=======
-    expectedSchemaFiles.add(path.basename(outPath))
->>>>>>> theirs
     indexExports.push(`export * from "./${name}.schema"`)
 
     if (CHECK_MODE) {
@@ -401,9 +268,7 @@ function main() {
   }
 
   if (CHECK_MODE) {
-    const existingGenerated = fs
-      .readdirSync(GENERATED_DIR)
-      .filter((f) => f.endsWith(".schema.ts"))
+    const existingGenerated = fs.readdirSync(GENERATED_DIR).filter((f) => f.endsWith(".schema.ts"))
     for (const existing of existingGenerated) {
       if (!expectedSchemaFiles.has(existing)) {
         console.error(`STALE: ${path.join(GENERATED_DIR, existing)} should be removed`)
@@ -425,25 +290,7 @@ function main() {
       console.log(`All ${unchanged} generated schema(s) are up to date.`)
     }
   } else {
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    // Remove stale files that no longer have corresponding JSON Schemas
-    const expectedSchemaFiles = new Set<string>()
-    for (const file of schemaFiles) {
-      const name = path.basename(file, ".json")
-      expectedSchemaFiles.add(`${name}.schema.ts`)
-    }
-
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    const existingGenerated = fs
-      .readdirSync(GENERATED_DIR)
-      .filter((f) => f.endsWith(".schema.ts"))
+    const existingGenerated = fs.readdirSync(GENERATED_DIR).filter((f) => f.endsWith(".schema.ts"))
     for (const existing of existingGenerated) {
       if (!expectedSchemaFiles.has(existing)) {
         fs.unlinkSync(path.join(GENERATED_DIR, existing))
@@ -451,18 +298,6 @@ function main() {
       }
     }
 
-<<<<<<< ours
-<<<<<<< ours
-    // Write index.ts
-    const indexExports = schemaFiles.map((file) => {
-      const name = path.basename(file, ".json")
-      return `export * from "./${name}.schema"`
-    })
-    
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     const indexSource = [HEADER.trimEnd(), "", ...indexExports.sort(), ""].join("\n")
     fs.writeFileSync(INDEX_PATH, indexSource, "utf-8")
     console.log(`Generated: ${INDEX_PATH}`)
