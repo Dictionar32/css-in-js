@@ -65,8 +65,6 @@ function watchMetricsFile() {
       }
     }, 2000)
   }
-    }, 2000)
-  }
 }
 
 const dashboardHtml = `<!doctype html>

@@ -13,10 +13,12 @@
     "noUncheckedSideEffectImports": true,
     "ignoreDeprecations": "6.0",
     "rootDir": ".",
+    "baseUrl": ".",
     "jsx": "react-jsx",
     "declaration": true,
     "declarationDir": "dist",
     "outDir": "dist",
-    "types": []
+    "types": [],
+    "allowImportingTsExtensions": true
   }
 }

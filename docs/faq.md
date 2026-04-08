@@ -1,13 +1,23 @@
 # FAQ
 
 ## Apakah semua fitur roadmap sudah selesai?
-Sebagian besar sudah. Per v4.2.0, hampir semua item Sprint 1–5 sudah Production-ready. Yang tersisa (Sprint 7+): RSC auto-inject route CSS, dynamic route splitting, Figma push (Enterprise plan), plugin marketplace, docs bilingual ID/EN. Lihat `docs/status-dashboard.md` untuk status lengkap.
+Sebagian besar sudah. Per v5.0.0, semua item Sprint 1–10 sudah Production-ready. Yang tersisa (Sprint 9+/10+): cluster CSS generation langsung, gRPC remote protocol, Prometheus config template, docs bilingual ID/EN, plugin marketplace publishing. Lihat `docs/master-list-unimplemented-2026-04-07.md` untuk backlog lengkap. Lihat `docs/status-dashboard.md` untuk status lengkap.
 
 ## Kenapa ada lockfile berubah?
 Karena ada perubahan dependency workspace agar package baru (scanner/engine/vite integration/cli) bisa di-resolve konsisten.
 
 ## Apakah wajib pakai Rust parser?
-Tidak. Itu fase optimasi lanjutan (opsional). Default tetap JS path dengan fallback aman.
+**Ya, mulai v5.0.** Native binding (`tailwind_styled_parser.node`) wajib tersedia — scanner dan compiler akan throw error jika binary tidak ditemukan.
+
+Pre-built binary untuk Linux x64 sudah disertakan. Untuk macOS dan Windows, build dari source:
+
+```bash
+cd native && cargo build --release
+```
+
+Atau gunakan variabel `TWS_NO_NATIVE=1` untuk development sementara (akan dihapus di release mendatang — lihat `plans/remove-js-fallback-native-only.md`).
+
+> Sebelum v5.0, Rust parser memang opsional. Jika masih di v4.x, fallback JS tetap aktif.
 
 ## Apa yang harus ditingkatkan agar bisa digunakan semua orang?
 Agar adopsi lebih luas (pemula sampai tim enterprise), prioritas peningkatan yang paling berdampak adalah:
@@ -111,3 +121,6 @@ Contoh item yang masih bisa berada di backlog roadmap meskipun gap-check sudah h
 Jadi, baca status dengan urutan berikut:
 1. Gate kualitas saat ini (`validate:final`, `health:summary`, `validate:pr5:gaps`).
 2. Status milestone roadmap jangka menengah/panjang.
+
+Keduanya harus dipertimbangkan untuk menilai kemajuan keseluruhan.
+ 
