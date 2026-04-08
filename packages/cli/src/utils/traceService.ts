@@ -681,7 +681,9 @@ function safeToString(value: unknown): string {
       try {
         const vo = objValueOf.call(value)
         if (vo !== value) return String(vo)
-      } catch {}
+      } catch {
+        // ignore valueOf errors - fallback to other methods
+      }
     }
 
     const toStr = obj.toString
@@ -691,7 +693,9 @@ function safeToString(value: unknown): string {
         if (typeof result === "string" && result !== "[object Object]") {
           return result
         }
-      } catch {}
+      } catch {
+        // ignore toString errors - return default
+      }
     }
 
     return "?"

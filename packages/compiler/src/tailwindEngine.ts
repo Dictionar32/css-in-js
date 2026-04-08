@@ -77,9 +77,6 @@ export const generateAllRouteCss = async (
     }
 
     const totalSize = results.reduce((sum, r) => sum + r.sizeBytes, 0)
-    console.log(
-      `[tailwind-styled-v4] Route CSS generated: ${results.length} routes, ${formatBytes(totalSize)} total`
-    )
   }
 
   return results

@@ -48,7 +48,9 @@ export function loadRouteCssManifest(manifestPath?: string): RouteCssManifest | 
         _cache.manifest = JSON.parse(fs.readFileSync(p, "utf8"))
         _cache.manifestPath = p
         return _cache.manifest
-      } catch {}
+      } catch (e) {
+        // ignore manifest parse errors - return null
+      }
     }
   }
   return null

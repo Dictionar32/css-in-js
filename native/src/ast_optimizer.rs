@@ -9,10 +9,9 @@
 /// - Better cache invalidation based on AST changes
 use once_cell::sync::Lazy;
 use oxc_allocator::Allocator;
-use oxc_parser::{Parser, ParserReturn};
+use oxc_parser::Parser;
 use oxc_span::SourceType;
 use regex::Regex;
-use std::path::Path;
 
 /// Result of AST-based template extraction
 #[derive(Debug, Clone)]
@@ -37,31 +36,22 @@ static RE_TEMPLATE_VALIDATION: Lazy<Regex> =
 /// ─ OPTIMIZATION (Phase 3.2): AST-based extraction with error recovery
 pub fn extract_templates_from_ast(source: &str) -> (Vec<AstTemplateMatch>, bool, bool) {
     let allocator = Allocator::default();
-    // ─ SourceType detection based on file content
+
+    // Oxc 0.55: SourceType API
     let has_jsx = source.contains("jsx") || source.contains("<") || source.contains(">");
     let is_typescript = source.contains("interface ") || source.contains("type ");
-    let filename = if is_typescript {
-        "test.tsx"
-    } else if has_jsx {
-        "test.jsx"
-    } else {
-        "test.js"
-    };
 
-    let source_type = SourceType::from_path(Path::new(filename))
-        .unwrap_or_default()
+    let source_type = SourceType::default()
+        .with_javascript(true)
+        .with_typescript(is_typescript)
+        .with_jsx(has_jsx)
         .with_module(true);
 
     let parser = Parser::new(&allocator, source, source_type);
-    let ParserReturn {
-        program: _,
-        errors: parse_errors,
-        trivias: _,
-        panicked: _,
-    } = parser.parse();
+    let ret = parser.parse();
 
     // ─ Early return: If parsing completely fails, fall back to regex
-    if !parse_errors.is_empty() && parse_errors.len() > 5 {
+    if !ret.errors.is_empty() && ret.errors.len() > 5 {
         return (vec![], false, true);
     }
 

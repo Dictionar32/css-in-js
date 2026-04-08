@@ -1,4 +1,5 @@
 import type { ScanWorkspaceResult } from "@tailwind-styled/scanner"
+import { TwError } from "@tailwind-styled/shared"
 import { getNativeEngineBinding } from "./native-bridge"
 import type { SourceLocation } from "./ir"
 
@@ -30,15 +31,15 @@ export class BundleAnalyzer {
     css: string
   ): BundleAnalysisResult {
     if (!className || className.trim() === "") {
-      throw new Error("Class name cannot be empty")
+      throw TwError.fromCompile("INVALID_CLASS_NAME", "Class name cannot be empty")
     }
 
     if (!scanResult) {
-      throw new Error("Scan result is required for analysis")
+      throw TwError.fromCompile("MISSING_SCAN_RESULT", "Scan result is required for analysis")
     }
 
     if (typeof css !== "string") {
-      throw new Error("CSS string is required for analysis")
+      throw TwError.fromCompile("INVALID_CSS_TYPE", "CSS string is required for analysis")
     }
 
     const normalizedClass = className.startsWith(".") ? className.slice(1) : className
@@ -62,11 +63,11 @@ export class BundleAnalyzer {
 
   analyzeAll(scanResult: ScanWorkspaceResult, css: string): Map<string, BundleAnalysisResult> {
     if (!scanResult) {
-      throw new Error("Scan result is required for analysis")
+      throw TwError.fromCompile("MISSING_SCAN_RESULT", "Scan result is required for analysis")
     }
 
     if (typeof css !== "string") {
-      throw new Error("CSS string is required for analysis")
+      throw TwError.fromCompile("INVALID_CSS_TYPE", "CSS string is required for analysis")
     }
 
     const results = new Map<string, BundleAnalysisResult>()
@@ -90,8 +91,8 @@ export class BundleAnalyzer {
   }
 
   calculateBundleContribution(className: string, css: string): number {
-    if (!className || className.trim() === "") throw new Error("Class name cannot be empty")
-    if (typeof css !== "string") throw new Error("CSS string is required")
+    if (!className || className.trim() === "") throw TwError.fromCompile("INVALID_CLASS_NAME", "Class name cannot be empty")
+    if (typeof css !== "string") throw TwError.fromCompile("INVALID_CSS_TYPE", "CSS string is required")
 
     try {
       const native = (() => { try { return getNativeEngineBinding() } catch { return null } })()
@@ -111,8 +112,8 @@ export class BundleAnalyzer {
   }
 
   detectDeadCode(scanResult: ScanWorkspaceResult, css: string): string[] {
-    if (!scanResult) throw new Error("Scan result is required for dead code detection")
-    if (typeof css !== "string") throw new Error("CSS string is required for dead code detection")
+    if (!scanResult) throw TwError.fromCompile("MISSING_SCAN_RESULT", "Scan result is required for dead code detection")
+    if (typeof css !== "string") throw TwError.fromCompile("INVALID_CSS_TYPE", "CSS string is required for dead code detection")
 
     try {
       const native = (() => { try { return getNativeEngineBinding() } catch { return null } })()

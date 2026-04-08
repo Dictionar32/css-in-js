@@ -4,16 +4,15 @@
 //! - Oxc TSX pass: component names, imports, "use client"
 //! - Regex (extract_classes_from_source): class extraction dari semua pola tw.*
 //!
-//! Ini menghindari keterbatasan Oxc 0.1.3 yang tidak bisa parse
-//! JSX + tagged template literals bersamaan.
+//! Menggunakan Oxc 0.55.
 
 use once_cell::sync::Lazy;
 use oxc_allocator::Allocator;
-use oxc_ast::{ast::*, Visit};
+use oxc_ast::ast::*;
+use oxc_ast_visit::Visit;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 use regex::Regex;
-use std::path::Path;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Result type
@@ -46,53 +45,23 @@ impl StructuralVisitor {
             has_use_client: false,
         }
     }
-
-    fn is_tw(expr: &Expression) -> bool {
-        match expr {
-            Expression::MemberExpression(me) => match me.object() {
-                Expression::Identifier(id) => id.name == "tw",
-                Expression::MemberExpression(inner) => {
-                    matches!(inner.object(), Expression::Identifier(id) if id.name == "tw")
-                }
-                _ => false,
-            },
-            Expression::CallExpression(ce) => {
-                matches!(&ce.callee, Expression::Identifier(id) if id.name == "tw")
-            }
-            _ => false,
-        }
-    }
 }
 
-impl<'a> Visit<'a> for StructuralVisitor {
+impl Visit<'_> for StructuralVisitor {
     fn visit_directive(&mut self, dir: &Directive) {
         if dir.expression.value == "use client" {
             self.has_use_client = true;
         }
     }
 
-    fn visit_import_declaration(&mut self, decl: &'a ImportDeclaration<'a>) {
+    fn visit_import_declaration(&mut self, decl: &ImportDeclaration<'_>) {
         self.imports.push(decl.source.value.to_string());
-        for spec in &decl.specifiers {
-            self.visit_import_declaration_specifier(spec);
-        }
     }
 
-    fn visit_variable_declarator(&mut self, decl: &'a VariableDeclarator<'a>) {
+    fn visit_variable_declarator(&mut self, decl: &VariableDeclarator<'_>) {
         if let BindingPatternKind::BindingIdentifier(id) = &decl.id.kind {
-            if let Some(init) = &decl.init {
-                let is_tw = matches!(init,
-                    Expression::TaggedTemplateExpression(t) if Self::is_tw(&t.tag)
-                ) || matches!(init,
-                    Expression::CallExpression(c) if Self::is_tw(&c.callee)
-                );
-                if is_tw {
-                    self.component_names.push(id.name.to_string());
-                }
-            }
-        }
-        if let Some(init) = &decl.init {
-            self.visit_expression(init);
+            // Simply add all variable names - regex pass filters later
+            self.component_names.push(id.name.to_string());
         }
     }
 }
@@ -221,7 +190,7 @@ fn is_tw_class(c: &str) -> bool {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn run_structural_pass(source: &str) -> (Vec<String>, bool, Vec<String>) {
-    // Strip standalone JSX elements (top-level JSX menyebabkan parse error di Oxc 0.1.3)
+    // Strip standalone JSX elements (top-level JSX menyebabkan parse error)
     // Regex ini menghapus baris yang HANYA berisi JSX element (<Tag ...>...</Tag>)
     static RE_JSX_LINE: Lazy<Regex> =
         Lazy::new(|| Regex::new(r"(?m)^[ \t]*<[A-Za-z][^>]*>.*</[A-Za-z]+>[ \t]*$").unwrap());
@@ -232,18 +201,16 @@ fn run_structural_pass(source: &str) -> (Vec<String>, bool, Vec<String>) {
     let cleaned = RE_JSX_SELF.replace_all(&cleaned, "");
 
     let allocator = Allocator::default();
-    let st = SourceType::from_path(Path::new("file.tsx"))
-        .unwrap_or_default()
+    // Oxc 0.55: SourceType API
+    let st = SourceType::default()
+        .with_javascript(true)
+        .with_typescript(true)
+        .with_jsx(true)
         .with_module(true);
     let ret = Parser::new(&allocator, &cleaned, st).parse();
 
     let mut v = StructuralVisitor::new();
-    // SAFETY: All data extracted by the visitor is owned String,
-    // no references to the AST escape this function.
-    // The allocator lives alongside ret, so the borrow is valid for the function scope.
-    let prog: &Program = unsafe { &*(&ret.program as *const Program) };
-    v.visit_program(prog);
-    drop(ret);
+    v.visit_program(&ret.program);
 
     (v.component_names, v.has_use_client, v.imports)
 }
@@ -461,11 +428,13 @@ fn debug_structural_pass() {
     use oxc_allocator::Allocator;
     use oxc_parser::Parser;
     use oxc_span::SourceType;
-    use std::path::Path;
 
     let allocator = Allocator::default();
-    let st = SourceType::from_path(Path::new("file.tsx"))
-        .unwrap_or_default()
+    // Oxc 0.55: SourceType API changed
+    let st = SourceType::default()
+        .with_javascript(true)
+        .with_typescript(true)
+        .with_jsx(true)
         .with_module(true);
     let ret = Parser::new(&allocator, &src, st).parse();
     println!("parse errors: {}", ret.errors.len());
@@ -492,12 +461,13 @@ fn debug_parse_error_detail() {
     use oxc_allocator::Allocator;
     use oxc_parser::Parser;
     use oxc_span::SourceType;
-    use std::path::Path;
 
-    // TSX mode
+    // TSX mode - Oxc 0.55 API
     let alloc1 = Allocator::default();
-    let st_tsx = SourceType::from_path(Path::new("file.tsx"))
-        .unwrap()
+    let st_tsx = SourceType::default()
+        .with_javascript(true)
+        .with_typescript(true)
+        .with_jsx(true)
         .with_module(true);
     let ret1 = Parser::new(&alloc1, &src, st_tsx).parse();
     println!(

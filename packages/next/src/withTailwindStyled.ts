@@ -38,7 +38,7 @@ interface NextWebpackConfig {
 }
 
 interface NextConfigWithTurbopack {
-  webpack?: ((...args: any[]) => any) | null | undefined
+  webpack?: ((config: NextWebpackConfig, options: unknown) => NextWebpackConfig | Promise<NextWebpackConfig>) | null
   turbopack?: Record<string, unknown>
   [key: string]: unknown
 }
@@ -138,8 +138,7 @@ export function withTailwindStyled(options: TailwindStyledNextOptions = {}) {
 
     return {
       ...nextConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      webpack(config: NextWebpackConfig, webpackOptions: any) {
+      webpack(config: NextWebpackConfig, webpackOptions: unknown) {
         const apply = (resolvedConfig: NextWebpackConfig) =>
           applyWebpackRule(resolvedConfig, normalizedOptions, webpackLoaderPath)
 

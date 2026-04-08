@@ -226,7 +226,6 @@ export function tailwindStyledPlugin(opts: VitePluginOptions = {}): Plugin {
 
       try {
         await engine.build()
-        console.log("[tailwind-styled-v4] Engine build complete")
       } catch (error) {
         const msg = `[tailwind-styled-v4] Engine build step failed: ${error}`
         if (strict) {

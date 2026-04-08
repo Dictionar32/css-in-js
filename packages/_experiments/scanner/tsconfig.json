@@ -3,7 +3,7 @@
   "compilerOptions": {
     "lib": ["ES2025"],
     "noEmit": true,
-    "types": ["node"]
+    "types": []
   },
   "include": ["*.ts", "*.d.ts"]
 }

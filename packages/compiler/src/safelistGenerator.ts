@@ -67,7 +67,6 @@ export function generateSafelist(
   const absOutput = path.isAbsolute(outputPath) ? outputPath : path.resolve(cwd, outputPath)
 
   fs.writeFileSync(absOutput, JSON.stringify(sorted, null, 2))
-  console.log(`[tailwind-styled-v4] Safelist: ${sorted.length} classes → ${absOutput}`)
 
   return sorted
 }
@@ -130,7 +129,6 @@ export function generateSafelistCss(
 `
 
   fs.writeFileSync(absOutput, css)
-  console.log(`[tailwind-styled-v4] Safelist: ${sorted.length} classes → ${absOutput}`)
 
   return sorted
 }

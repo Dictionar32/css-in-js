@@ -3550,12 +3550,10 @@ pub fn stop_watch(handle_id: u32) -> bool {
 
 // ── Lazy regexes untuk fungsi baru ──────────────────────────────────────────
 
-static RE_JSX_ELEMENT: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"<([A-Z][A-Za-z0-9]*)(\s[^>]*?)(?:/>|>)").unwrap()
-});
-static RE_JSX_PROP: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"(\w+)=["']([^"']+)["']"#).unwrap()
-});
+static RE_JSX_ELEMENT: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"<([A-Z][A-Za-z0-9]*)(\s[^>]*?)(?:/>|>)").unwrap());
+static RE_JSX_PROP: Lazy<Regex> = Lazy::new(|| Regex::new(r#"(\w+)=["']([^"']+)["']"#).unwrap());
+#[allow(dead_code)]
 static RE_UTILITY_CONFLICT: Lazy<Regex> = Lazy::new(|| {
     // Group class prefix untuk conflict detection
     Regex::new(r"^(p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|w|h|min-w|min-h|max-w|max-h|text|font|bg|border|rounded|shadow|opacity|z|gap|flex|grid|col|row|space)-").unwrap()
@@ -3585,9 +3583,23 @@ pub struct ComponentPropUsage {
 pub fn extract_component_usage(source: String) -> Vec<ComponentPropUsage> {
     // Props yang di-skip (bukan variant props)
     let skip_props: HashSet<&str> = [
-        "className", "style", "id", "href", "src", "alt", "type",
-        "ref", "key", "onClick", "onChange", "onSubmit", "children",
-        "aria-label", "aria-hidden", "role", "tabIndex",
+        "className",
+        "style",
+        "id",
+        "href",
+        "src",
+        "alt",
+        "type",
+        "ref",
+        "key",
+        "onClick",
+        "onChange",
+        "onSubmit",
+        "children",
+        "aria-label",
+        "aria-hidden",
+        "role",
+        "tabIndex",
     ]
     .iter()
     .cloned()
@@ -3830,11 +3842,9 @@ fn extract_tw_classes_from_source(source: &str) -> Vec<String> {
     }
 
     // 2. className="..." patterns
-    static RE_CLASSNAME: Lazy<Regex> = Lazy::new(|| {
-        Regex::new(r#"className\s*=\s*["']([^"']+)["']"#).unwrap()
-    });
-    for cap in RE_CLASSNAME.captures_iter(source)
-    {
+    static RE_CLASSNAME: Lazy<Regex> =
+        Lazy::new(|| Regex::new(r#"className\s*=\s*["']([^"']+)["']"#).unwrap());
+    for cap in RE_CLASSNAME.captures_iter(source) {
         if let Some(m) = cap.get(1) {
             for token in m.as_str().split_whitespace() {
                 if !token.is_empty() {
@@ -3867,10 +3877,7 @@ pub struct SafelistCheckResult {
 /// Menggantikan Array.filter().includes() di JS yang O(n*m).
 /// HashSet lookup: O(1) per class → O(n) total.
 #[napi]
-pub fn check_against_safelist(
-    classes: Vec<String>,
-    safelist: Vec<String>,
-) -> SafelistCheckResult {
+pub fn check_against_safelist(classes: Vec<String>, safelist: Vec<String>) -> SafelistCheckResult {
     let safelist_set: HashSet<&str> = safelist.iter().map(|s| s.as_str()).collect();
     let safelist_size = safelist.len() as u32;
 
@@ -3897,18 +3904,12 @@ pub fn check_against_safelist(
 // styleBucketSystem, dan analyzer
 // ─────────────────────────────────────────────────────────────────────────────
 
-static RE_INDENTED_TW: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?m)^([ \t]+)(const|let)\s+([A-Z]\w*)\s*=\s*tw\.[\w]+[`(]").unwrap()
-});
-static RE_AFTER_IMPORTS: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?m)^import\s+").unwrap()
-});
-static RE_CSS_RULE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\{([^}]*)\}").unwrap()
-});
-static RE_CSS_CLASS_SELECTOR: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\.([\w-]+(?::[:\w-]+)?)\s*\{([^}]*)\}").unwrap()
-});
+static RE_INDENTED_TW: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?m)^([ \t]+)(const|let)\s+([A-Z]\w*)\s*=\s*tw\.[\w]+[`(]").unwrap());
+static RE_AFTER_IMPORTS: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)^import\s+").unwrap());
+static RE_CSS_RULE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{([^}]*)\}").unwrap());
+static RE_CSS_CLASS_SELECTOR: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"\.([\w-]+(?::[:\w-]+)?)\s*\{([^}]*)\}").unwrap());
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -3960,7 +3961,9 @@ pub fn hoist_components(source: String) -> HoistResult {
         }
         let start = cap.get(0).map_or(0, |m| m.start());
         // Find line end
-        let line_end = source[start..].find('\n').map_or(source.len() - start, |i| i + 1);
+        let line_end = source[start..]
+            .find('\n')
+            .map_or(source.len() - start, |i| i + 1);
         capture_data.push((start, name.to_string(), indent.to_string(), line_end));
     }
 
@@ -4012,7 +4015,12 @@ pub fn hoist_components(source: String) -> HoistResult {
 
     if !hoisted_decls.is_empty() {
         let hoist_block = format!("\n{}\n", hoisted_decls.join("\n\n"));
-        code = format!("{}{}{}", &code[..insert_at], hoist_block, &code[insert_at..]);
+        code = format!(
+            "{}{}{}",
+            &code[..insert_at],
+            hoist_block,
+            &code[insert_at..]
+        );
     }
 
     HoistResult {
@@ -4097,7 +4105,11 @@ pub fn compile_variant_table(config_json: String) -> VariantTableResult {
     // Cartesian product via fold
     let combinations: Vec<Vec<String>> = value_sets.iter().fold(vec![vec![]], |acc, values| {
         acc.iter()
-            .flat_map(|combo| values.iter().map(move |v| [combo.clone(), vec![v.clone()]].concat()))
+            .flat_map(|combo| {
+                values
+                    .iter()
+                    .map(move |v| [combo.clone(), vec![v.clone()]].concat())
+            })
             .collect()
     });
 
@@ -4126,9 +4138,10 @@ pub fn compile_variant_table(config_json: String) -> VariantTableResult {
             .collect();
 
         for compound in &compounds {
-            let matches = compound.iter().filter(|(k, _)| *k != "class").all(|(k, v)| {
-                combo_map.get(k.as_str()).map_or(false, |cv| cv == v)
-            });
+            let matches = compound
+                .iter()
+                .filter(|(k, _)| *k != "class")
+                .all(|(k, v)| combo_map.get(k.as_str()).map_or(false, |cv| cv == v));
             if matches {
                 if let Some(cls) = compound.get("class") {
                     if !cls.is_empty() {
@@ -4148,7 +4161,11 @@ pub fn compile_variant_table(config_json: String) -> VariantTableResult {
         .iter()
         .map(|k| {
             defaults.get(k).cloned().unwrap_or_else(|| {
-                config.variants[k].keys().next().cloned().unwrap_or_default()
+                config.variants[k]
+                    .keys()
+                    .next()
+                    .cloned()
+                    .unwrap_or_default()
             })
         })
         .collect();
@@ -4196,56 +4213,96 @@ pub fn classify_and_sort_classes(classes: Vec<String>) -> Vec<BucketedClass> {
     // Prefix → bucket mapping (subset of common Tailwind utilities)
     let bucket_map: HashMap<&str, (&str, u32)> = [
         // layout
-        ("flex", ("layout", 100)), ("grid", ("layout", 101)),
-        ("block", ("layout", 102)), ("inline", ("layout", 103)),
-        ("hidden", ("layout", 104)), ("absolute", ("layout", 110)),
-        ("relative", ("layout", 111)), ("fixed", ("layout", 112)),
-        ("sticky", ("layout", 113)), ("static", ("layout", 114)),
-        ("overflow", ("layout", 120)), ("z-", ("layout", 130)),
-        ("col-", ("layout", 140)), ("row-", ("layout", 141)),
-        ("items-", ("layout", 150)), ("justify-", ("layout", 151)),
-        ("place-", ("layout", 152)), ("self-", ("layout", 153)),
+        ("flex", ("layout", 100)),
+        ("grid", ("layout", 101)),
+        ("block", ("layout", 102)),
+        ("inline", ("layout", 103)),
+        ("hidden", ("layout", 104)),
+        ("absolute", ("layout", 110)),
+        ("relative", ("layout", 111)),
+        ("fixed", ("layout", 112)),
+        ("sticky", ("layout", 113)),
+        ("static", ("layout", 114)),
+        ("overflow", ("layout", 120)),
+        ("z-", ("layout", 130)),
+        ("col-", ("layout", 140)),
+        ("row-", ("layout", 141)),
+        ("items-", ("layout", 150)),
+        ("justify-", ("layout", 151)),
+        ("place-", ("layout", 152)),
+        ("self-", ("layout", 153)),
         // spacing
-        ("p-", ("spacing", 200)), ("px-", ("spacing", 201)),
-        ("py-", ("spacing", 202)), ("pt-", ("spacing", 203)),
-        ("pb-", ("spacing", 204)), ("pl-", ("spacing", 205)),
-        ("pr-", ("spacing", 206)), ("m-", ("spacing", 210)),
-        ("mx-", ("spacing", 211)), ("my-", ("spacing", 212)),
-        ("mt-", ("spacing", 213)), ("mb-", ("spacing", 214)),
-        ("ml-", ("spacing", 215)), ("mr-", ("spacing", 216)),
-        ("gap-", ("spacing", 220)), ("space-", ("spacing", 225)),
+        ("p-", ("spacing", 200)),
+        ("px-", ("spacing", 201)),
+        ("py-", ("spacing", 202)),
+        ("pt-", ("spacing", 203)),
+        ("pb-", ("spacing", 204)),
+        ("pl-", ("spacing", 205)),
+        ("pr-", ("spacing", 206)),
+        ("m-", ("spacing", 210)),
+        ("mx-", ("spacing", 211)),
+        ("my-", ("spacing", 212)),
+        ("mt-", ("spacing", 213)),
+        ("mb-", ("spacing", 214)),
+        ("ml-", ("spacing", 215)),
+        ("mr-", ("spacing", 216)),
+        ("gap-", ("spacing", 220)),
+        ("space-", ("spacing", 225)),
         ("inset-", ("spacing", 230)),
         // sizing
-        ("w-", ("sizing", 300)), ("h-", ("sizing", 301)),
-        ("min-w-", ("sizing", 310)), ("max-w-", ("sizing", 311)),
-        ("min-h-", ("sizing", 312)), ("max-h-", ("sizing", 313)),
+        ("w-", ("sizing", 300)),
+        ("h-", ("sizing", 301)),
+        ("min-w-", ("sizing", 310)),
+        ("max-w-", ("sizing", 311)),
+        ("min-h-", ("sizing", 312)),
+        ("max-h-", ("sizing", 313)),
         ("size-", ("sizing", 320)),
         // typography
-        ("text-", ("typography", 400)), ("font-", ("typography", 401)),
-        ("leading-", ("typography", 402)), ("tracking-", ("typography", 403)),
-        ("line-", ("typography", 404)), ("uppercase", ("typography", 410)),
-        ("lowercase", ("typography", 411)), ("capitalize", ("typography", 412)),
-        ("truncate", ("typography", 420)), ("whitespace-", ("typography", 421)),
+        ("text-", ("typography", 400)),
+        ("font-", ("typography", 401)),
+        ("leading-", ("typography", 402)),
+        ("tracking-", ("typography", 403)),
+        ("line-", ("typography", 404)),
+        ("uppercase", ("typography", 410)),
+        ("lowercase", ("typography", 411)),
+        ("capitalize", ("typography", 412)),
+        ("truncate", ("typography", 420)),
+        ("whitespace-", ("typography", 421)),
         // visual
-        ("bg-", ("visual", 500)), ("border", ("visual", 510)),
-        ("rounded", ("visual", 520)), ("shadow", ("visual", 530)),
-        ("opacity-", ("visual", 540)), ("ring-", ("visual", 550)),
-        ("outline-", ("visual", 560)), ("fill-", ("visual", 570)),
-        ("stroke-", ("visual", 571)), ("gradient-", ("visual", 580)),
-        ("from-", ("visual", 581)), ("to-", ("visual", 582)),
+        ("bg-", ("visual", 500)),
+        ("border", ("visual", 510)),
+        ("rounded", ("visual", 520)),
+        ("shadow", ("visual", 530)),
+        ("opacity-", ("visual", 540)),
+        ("ring-", ("visual", 550)),
+        ("outline-", ("visual", 560)),
+        ("fill-", ("visual", 570)),
+        ("stroke-", ("visual", 571)),
+        ("gradient-", ("visual", 580)),
+        ("from-", ("visual", 581)),
+        ("to-", ("visual", 582)),
         ("via-", ("visual", 583)),
         // interaction
-        ("cursor-", ("interaction", 600)), ("select-", ("interaction", 601)),
-        ("pointer-", ("interaction", 602)), ("resize-", ("interaction", 603)),
-        ("transition", ("interaction", 610)), ("animate-", ("interaction", 611)),
-        ("duration-", ("interaction", 612)), ("ease-", ("interaction", 613)),
+        ("cursor-", ("interaction", 600)),
+        ("select-", ("interaction", 601)),
+        ("pointer-", ("interaction", 602)),
+        ("resize-", ("interaction", 603)),
+        ("transition", ("interaction", 610)),
+        ("animate-", ("interaction", 611)),
+        ("duration-", ("interaction", 612)),
+        ("ease-", ("interaction", 613)),
         ("delay-", ("interaction", 614)),
         // responsive (variants)
-        ("sm:", ("responsive", 700)), ("md:", ("responsive", 701)),
-        ("lg:", ("responsive", 702)), ("xl:", ("responsive", 703)),
-        ("2xl:", ("responsive", 704)), ("dark:", ("responsive", 710)),
-        ("hover:", ("responsive", 720)), ("focus:", ("responsive", 721)),
-        ("active:", ("responsive", 722)), ("group-", ("responsive", 730)),
+        ("sm:", ("responsive", 700)),
+        ("md:", ("responsive", 701)),
+        ("lg:", ("responsive", 702)),
+        ("xl:", ("responsive", 703)),
+        ("2xl:", ("responsive", 704)),
+        ("dark:", ("responsive", 710)),
+        ("hover:", ("responsive", 720)),
+        ("focus:", ("responsive", 721)),
+        ("active:", ("responsive", 722)),
+        ("group-", ("responsive", 730)),
         ("peer-", ("responsive", 731)),
     ]
     .iter()
@@ -4339,7 +4396,7 @@ pub fn merge_css_declarations(css_chunks: Vec<String>) -> CssDeclarationMap {
 pub struct ClassBundleInfo {
     pub class_name: String,
     pub usage_count: u32,
-    pub files_json: String,   // JSON: string[]
+    pub files_json: String, // JSON: string[]
     pub bundle_size_bytes: u32,
     pub is_dead_code: bool,
 }
@@ -4375,7 +4432,10 @@ pub fn analyze_class_usage(
 
     for file in &scan.files {
         for cls in &file.classes {
-            class_files.entry(cls.clone()).or_default().push(file.file.clone());
+            class_files
+                .entry(cls.clone())
+                .or_default()
+                .push(file.file.clone());
             *class_counts.entry(cls.clone()).or_insert(0) += 1;
         }
     }
@@ -4416,15 +4476,13 @@ pub fn analyze_class_usage(
 // EXPANSION BATCH 3 — semantic analyzer, CSS reverse lookup, parseClasses
 // ─────────────────────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 static RE_CSS_SELECTOR_BLOCK: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\.([a-zA-Z_][a-zA-Z0-9_\\-]*)(?:::[a-zA-Z-]+)?\s*\{([^}]*)\}").unwrap()
 });
-static RE_CSS_PROPERTY: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([a-zA-Z-]+)\s*:\s*([^;!\n]+)(!important)?").unwrap()
-});
-static RE_VALID_CLASS: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^[-a-z0-9:/\[\]!.()+%]+$").unwrap()
-});
+static RE_CSS_PROPERTY: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"([a-zA-Z-]+)\s*:\s*([^;!\n]+)(!important)?").unwrap());
+static RE_VALID_CLASS: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[-a-z0-9:/\[\]!.()+%]+$").unwrap());
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -4479,16 +4537,40 @@ fn resolve_conflict_group(base: &str) -> Option<&'static str> {
         return None;
     }
     // Display utilities
-    if ["block","inline","inline-block","inline-flex","flex","grid","hidden"].contains(&base) {
+    if [
+        "block",
+        "inline",
+        "inline-block",
+        "inline-flex",
+        "flex",
+        "grid",
+        "hidden",
+    ]
+    .contains(&base)
+    {
         return Some("display");
     }
-    if base.starts_with("bg-")       { return Some("bg"); }
-    if base.starts_with("text-")     { return Some("text"); }
-    if base.starts_with("font-")     { return Some("font"); }
-    if base.starts_with("rounded")   { return Some("rounded"); }
-    if base.starts_with("shadow")    { return Some("shadow"); }
-    if base.starts_with("border-")   { return Some("border"); }
-    if base.starts_with("opacity-")  { return Some("opacity"); }
+    if base.starts_with("bg-") {
+        return Some("bg");
+    }
+    if base.starts_with("text-") {
+        return Some("text");
+    }
+    if base.starts_with("font-") {
+        return Some("font");
+    }
+    if base.starts_with("rounded") {
+        return Some("rounded");
+    }
+    if base.starts_with("shadow") {
+        return Some("shadow");
+    }
+    if base.starts_with("border-") {
+        return Some("border");
+    }
+    if base.starts_with("opacity-") {
+        return Some("opacity");
+    }
     if base.starts_with("w-") || base.starts_with("min-w-") || base.starts_with("max-w-") {
         return Some("width");
     }
@@ -4501,16 +4583,36 @@ fn resolve_conflict_group(base: &str) -> Option<&'static str> {
     if base.starts_with("m-") || base.starts_with("mx-") || base.starts_with("my-") {
         return Some("margin");
     }
-    if base.starts_with("z-")        { return Some("z-index"); }
-    if base.starts_with("gap-")      { return Some("gap"); }
-    if base.starts_with("col-")      { return Some("grid-column"); }
-    if base.starts_with("row-")      { return Some("grid-row"); }
-    if base.starts_with("leading-")  { return Some("line-height"); }
-    if base.starts_with("tracking-") { return Some("letter-spacing"); }
-    if base.starts_with("ring-")     { return Some("ring"); }
-    if base.starts_with("outline-")  { return Some("outline"); }
-    if base.starts_with("cursor-")   { return Some("cursor"); }
-    if base.starts_with("overflow-") { return Some("overflow"); }
+    if base.starts_with("z-") {
+        return Some("z-index");
+    }
+    if base.starts_with("gap-") {
+        return Some("gap");
+    }
+    if base.starts_with("col-") {
+        return Some("grid-column");
+    }
+    if base.starts_with("row-") {
+        return Some("grid-row");
+    }
+    if base.starts_with("leading-") {
+        return Some("line-height");
+    }
+    if base.starts_with("tracking-") {
+        return Some("letter-spacing");
+    }
+    if base.starts_with("ring-") {
+        return Some("ring");
+    }
+    if base.starts_with("outline-") {
+        return Some("outline");
+    }
+    if base.starts_with("cursor-") {
+        return Some("cursor");
+    }
+    if base.starts_with("overflow-") {
+        return Some("overflow");
+    }
     None
 }
 
@@ -4529,7 +4631,12 @@ pub fn detect_class_conflicts(usages_json: String) -> ConflictDetectionResult {
 
     let usages: Vec<ClassUsage> = match serde_json::from_str(&usages_json) {
         Ok(u) => u,
-        Err(_) => return ConflictDetectionResult { conflicts: vec![], conflicted_class_names: vec![] },
+        Err(_) => {
+            return ConflictDetectionResult {
+                conflicts: vec![],
+                conflicted_class_names: vec![],
+            }
+        }
     };
 
     // bucket key → { variantKey, group, classes }
@@ -4543,9 +4650,9 @@ pub fn detect_class_conflicts(usages_json: String) -> ConflictDetectionResult {
         };
 
         let key = format!("{}::{}", variant_key, group);
-        let entry = buckets.entry(key).or_insert_with(|| {
-            (variant_key.clone(), group, HashSet::new())
-        });
+        let entry = buckets
+            .entry(key)
+            .or_insert_with(|| (variant_key.clone(), group, HashSet::new()));
         entry.2.insert(usage.name.clone());
     }
 
@@ -4563,7 +4670,11 @@ pub fn detect_class_conflicts(usages_json: String) -> ConflictDetectionResult {
             conflicted.insert(cls.clone());
         }
 
-        let variant_label = if variant_key.is_empty() { "base" } else { variant_key.as_str() };
+        let variant_label = if variant_key.is_empty() {
+            "base"
+        } else {
+            variant_key.as_str()
+        };
         conflicts.push(ClassConflict {
             group: group.to_string(),
             variant_key: variant_key.clone(),
@@ -4577,7 +4688,9 @@ pub fn detect_class_conflicts(usages_json: String) -> ConflictDetectionResult {
 
     // Sort by conflict count desc, then group name asc
     conflicts.sort_by(|a, b| {
-        b.classes.len().cmp(&a.classes.len())
+        b.classes
+            .len()
+            .cmp(&a.classes.len())
             .then(a.group.cmp(&b.group))
     });
 
@@ -4617,48 +4730,149 @@ pub fn classify_known_classes(
     let custom_set: HashSet<&str> = custom_utilities.iter().map(|s| s.as_str()).collect();
 
     let known_prefixes: HashSet<&str> = [
-        "absolute","align","animate","arbitrary","aspect","backdrop","basis",
-        "bg","block","border","bottom","col","container","contents","cursor",
-        "dark","display","divide","fill","fixed","flex","float","font","from",
-        "gap","grid","grow","h","hidden","inset","inline","isolate","items",
-        "justify","left","leading","line","list","m","max-h","max-w","mb",
-        "min-h","min-w","ml","mr","mt","mx","my","object","opacity","order",
-        "origin","outline","overflow","overscroll","p","pb","pe","perspective",
-        "place","pl","pointer","position","pr","ps","pt","px","py","relative",
-        "right","ring","rotate","rounded","row","scale","self","shadow",
-        "shrink","size","skew","space","sr","start","static","sticky","stroke",
-        "table","text","to","top","tracking","transform","transition","translate",
-        "truncate","underline","uppercase","via","visible","w","whitespace","z",
-    ].iter().cloned().collect();
+        "absolute",
+        "align",
+        "animate",
+        "arbitrary",
+        "aspect",
+        "backdrop",
+        "basis",
+        "bg",
+        "block",
+        "border",
+        "bottom",
+        "col",
+        "container",
+        "contents",
+        "cursor",
+        "dark",
+        "display",
+        "divide",
+        "fill",
+        "fixed",
+        "flex",
+        "float",
+        "font",
+        "from",
+        "gap",
+        "grid",
+        "grow",
+        "h",
+        "hidden",
+        "inset",
+        "inline",
+        "isolate",
+        "items",
+        "justify",
+        "left",
+        "leading",
+        "line",
+        "list",
+        "m",
+        "max-h",
+        "max-w",
+        "mb",
+        "min-h",
+        "min-w",
+        "ml",
+        "mr",
+        "mt",
+        "mx",
+        "my",
+        "object",
+        "opacity",
+        "order",
+        "origin",
+        "outline",
+        "overflow",
+        "overscroll",
+        "p",
+        "pb",
+        "pe",
+        "perspective",
+        "place",
+        "pl",
+        "pointer",
+        "position",
+        "pr",
+        "ps",
+        "pt",
+        "px",
+        "py",
+        "relative",
+        "right",
+        "ring",
+        "rotate",
+        "rounded",
+        "row",
+        "scale",
+        "self",
+        "shadow",
+        "shrink",
+        "size",
+        "skew",
+        "space",
+        "sr",
+        "start",
+        "static",
+        "sticky",
+        "stroke",
+        "table",
+        "text",
+        "to",
+        "top",
+        "tracking",
+        "transform",
+        "transition",
+        "translate",
+        "truncate",
+        "underline",
+        "uppercase",
+        "via",
+        "visible",
+        "w",
+        "whitespace",
+        "z",
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
-    classes.into_iter().map(|cls| {
-        let (variant_key, base) = split_variant_and_base(&cls);
-        let is_arbitrary = base.contains('[') && base.contains(']');
+    classes
+        .into_iter()
+        .map(|cls| {
+            let (variant_key, base) = split_variant_and_base(&cls);
+            let is_arbitrary = base.contains('[') && base.contains(']');
 
-        let utility_prefix = if is_arbitrary {
-            "arbitrary".to_string()
-        } else {
-            let normalized = if base.starts_with('-') { &base[1..] } else { &base };
-            // Find prefix: everything before first '-' that has value after it
-            let prefix_end = normalized.find('-').map_or(normalized.len(), |i| i);
-            normalized[..prefix_end].to_string()
-        };
+            let utility_prefix = if is_arbitrary {
+                "arbitrary".to_string()
+            } else {
+                let normalized = if base.starts_with('-') {
+                    &base[1..]
+                } else {
+                    &base
+                };
+                // Find prefix: everything before first '-' that has value after it
+                let prefix_end = normalized.find('-').map_or(normalized.len(), |i| i);
+                normalized[..prefix_end].to_string()
+            };
 
-        let is_known = safelist_set.contains(cls.as_str())
-            || custom_set.contains(cls.as_str())
-            || custom_set.contains(base.as_str())
-            || (is_arbitrary)
-            || known_prefixes.contains(utility_prefix.as_str());
+            let is_known = safelist_set.contains(cls.as_str())
+                || custom_set.contains(cls.as_str())
+                || custom_set.contains(base.as_str())
+                || (is_arbitrary)
+                || known_prefixes.contains(utility_prefix.as_str());
 
-        KnownClassResult {
-            class_name: cls,
-            is_known,
-            variant_key,
-            base_class: base,
-            utility_prefix,
-            is_arbitrary,
-        }
-    }).collect()
+            KnownClassResult {
+                class_name: cls,
+                is_known,
+                variant_key,
+                base_class: base,
+                utility_prefix,
+                is_arbitrary,
+            }
+        })
+        .collect()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4687,9 +4901,8 @@ pub fn parse_css_rules(css: String) -> Vec<CssRuleLookup> {
 
     // Match: .class-name { property: value; ... }
     // Handle escaped characters in class names (e.g., .hover\:bg-blue)
-    let selector_block_re = Regex::new(
-        r"\.([a-zA-Z_][-a-zA-Z0-9_:\\./\[\]]+)\s*\{([^}]*)\}"
-    ).unwrap();
+    let selector_block_re =
+        Regex::new(r"\.([a-zA-Z_][-a-zA-Z0-9_:\\./\[\]]+)\s*\{([^}]*)\}").unwrap();
 
     for cap in selector_block_re.captures_iter(&css) {
         let raw_class = match cap.get(1) {
@@ -4702,7 +4915,10 @@ pub fn parse_css_rules(css: String) -> Vec<CssRuleLookup> {
         };
 
         // Unescape CSS class name (e.g., "hover\:bg-blue" → "hover:bg-blue")
-        let class_name = raw_class.replace("\\:", ":").replace("\\.", ".").replace("\\/", "/");
+        let class_name = raw_class
+            .replace("\\:", ":")
+            .replace("\\.", ".")
+            .replace("\\/", "/");
 
         // Extract variants from class name
         let (variant_key, _base) = split_variant_and_base(&class_name);
@@ -4767,50 +4983,51 @@ pub struct VariantSplitResult {
 ///   → { variantKey: "dark:hover", base: "bg-blue-500", modifier: "50", ... }
 #[napi]
 pub fn batch_split_classes(classes: Vec<String>) -> Vec<VariantSplitResult> {
-    classes.into_iter().map(|cls| {
-        let (variant_key, base_with_modifier) = split_variant_and_base(&cls);
-        let variants: Vec<String> = if variant_key.is_empty() {
-            vec![]
-        } else {
-            variant_key.split(':').map(|s| s.to_string()).collect()
-        };
+    classes
+        .into_iter()
+        .map(|cls| {
+            let (variant_key, base_with_modifier) = split_variant_and_base(&cls);
+            let variants: Vec<String> = if variant_key.is_empty() {
+                vec![]
+            } else {
+                variant_key.split(':').map(|s| s.to_string()).collect()
+            };
 
-        // Extract opacity modifier: "bg-blue-500/50" → base="bg-blue-500", mod="50"
-        let (base, modifier) = if let Some(slash_idx) = base_with_modifier.rfind('/') {
-            let b = base_with_modifier[..slash_idx].to_string();
-            let m = base_with_modifier[slash_idx + 1..].to_string();
-            (b, Some(m))
-        } else {
-            (base_with_modifier, None)
-        };
+            // Extract opacity modifier: "bg-blue-500/50" → base="bg-blue-500", mod="50"
+            let (base, modifier) = if let Some(slash_idx) = base_with_modifier.rfind('/') {
+                let b = base_with_modifier[..slash_idx].to_string();
+                let m = base_with_modifier[slash_idx + 1..].to_string();
+                (b, Some(m))
+            } else {
+                (base_with_modifier, None)
+            };
 
-        let is_arbitrary = base.contains('[') && base.contains(']');
-        let has_modifier = modifier.is_some();
+            let is_arbitrary = base.contains('[') && base.contains(']');
+            let has_modifier = modifier.is_some();
 
-        VariantSplitResult {
-            variant_key,
-            base,
-            variants,
-            is_arbitrary,
-            has_modifier,
-            modifier,
-        }
-    }).collect()
+            VariantSplitResult {
+                variant_key,
+                base,
+                variants,
+                is_arbitrary,
+                has_modifier,
+                modifier,
+            }
+        })
+        .collect()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPANSION BATCH 4 — cssToIr, bundleAnalyzer full methods, impactTracker
 // ─────────────────────────────────────────────────────────────────────────────
 
-static RE_CSS_RULE_SELECTOR: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"([^{}]+)\s*\{([^{}]*)\}").unwrap()
-});
+static RE_CSS_RULE_SELECTOR: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"([^{}]+)\s*\{([^{}]*)\}").unwrap());
 static RE_VARIANT_PREFIX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^(hover|focus|active|visited|checked|disabled|required|optional|first|last|odd|even|before|after|placeholder|file|selection|backdrop|group|peer)").unwrap()
 });
-static RE_CSS_CLASS_EXTRACT: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"\.([a-zA-Z0-9_-]+(?::[a-zA-Z0-9_-]+)*)").unwrap()
-});
+static RE_CSS_CLASS_EXTRACT: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"\.([a-zA-Z0-9_-]+(?::[a-zA-Z0-9_-]+)*)").unwrap());
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -4842,11 +5059,19 @@ pub fn parse_css_to_rules(css: String, prefix: Option<String>) -> Vec<ParsedCssR
     let mut rules: Vec<ParsedCssRule> = Vec::new();
 
     for cap in RE_CSS_RULE_SELECTOR.captures_iter(&css) {
-        let selector_text = match cap.get(1) { Some(m) => m.as_str().trim(), None => continue };
-        let decl_block   = match cap.get(2) { Some(m) => m.as_str().trim(), None => continue };
+        let selector_text = match cap.get(1) {
+            Some(m) => m.as_str().trim(),
+            None => continue,
+        };
+        let decl_block = match cap.get(2) {
+            Some(m) => m.as_str().trim(),
+            None => continue,
+        };
 
         // Skip at-rules (@media, @keyframes, etc.)
-        if selector_text.starts_with('@') { continue; }
+        if selector_text.starts_with('@') {
+            continue;
+        }
 
         // Parse selector
         let (class_name, variants, pseudo_classes, media_query, specificity) =
@@ -4854,11 +5079,19 @@ pub fn parse_css_to_rules(css: String, prefix: Option<String>) -> Vec<ParsedCssR
 
         // Parse declarations
         for decl_cap in RE_CSS_PROPERTY.captures_iter(decl_block) {
-            let property = match decl_cap.get(1) { Some(m) => m.as_str().trim().to_string(), None => continue };
-            let value    = match decl_cap.get(2) { Some(m) => m.as_str().trim().to_string(), None => continue };
+            let property = match decl_cap.get(1) {
+                Some(m) => m.as_str().trim().to_string(),
+                None => continue,
+            };
+            let value = match decl_cap.get(2) {
+                Some(m) => m.as_str().trim().to_string(),
+                None => continue,
+            };
             let important = decl_cap.get(3).is_some();
 
-            if property.is_empty() || value.is_empty() { continue; }
+            if property.is_empty() || value.is_empty() {
+                continue;
+            }
 
             // Detect layer
             let layer = if class_name.starts_with("tw-") || class_name.starts_with("tailwind-") {
@@ -4920,9 +5153,16 @@ fn parse_selector_str(
     }
 
     // Specificity: class = 10, variants add 10 each, media adds 1000
-    let specificity = 10 + (variants.len() as u32 * 10) + if media_query.is_some() { 1000 } else { 0 };
+    let specificity =
+        10 + (variants.len() as u32 * 10) + if media_query.is_some() { 1000 } else { 0 };
 
-    (class_name, variants, pseudo_classes, media_query, specificity)
+    (
+        class_name,
+        variants,
+        pseudo_classes,
+        media_query,
+        specificity,
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4959,61 +5199,65 @@ pub fn calculate_bundle_contributions(
     // Pre-build line index untuk efisiensi
     let css_lines: Vec<&str> = css.lines().collect();
 
-    classes.into_iter().map(|cls| {
-        let normalized = cls.trim_start_matches('.').to_string();
-        let in_css = css_classes.contains(&normalized);
+    classes
+        .into_iter()
+        .map(|cls| {
+            let normalized = cls.trim_start_matches('.').to_string();
+            let in_css = css_classes.contains(&normalized);
 
-        if !in_css {
-            return BundleContribution {
-                class_name: normalized,
-                size_bytes: 0,
-                variant_chains: vec![],
-                dependencies: vec![],
-                in_css: false,
-            };
-        }
+            if !in_css {
+                return BundleContribution {
+                    class_name: normalized,
+                    size_bytes: 0,
+                    variant_chains: vec![],
+                    dependencies: vec![],
+                    in_css: false,
+                };
+            }
 
-        // Calculate size: sum length of lines containing this class selector
-        let class_selector = format!(".{}", normalized);
-        let escaped = regex::escape(&normalized);
-        let variant_pattern = format!(r"([\w-]+:{}|{})", escaped, escaped);
-        let variant_re = Regex::new(&variant_pattern).unwrap_or_else(|_| Regex::new(r"$^").unwrap());
+            // Calculate size: sum length of lines containing this class selector
+            let class_selector = format!(".{}", normalized);
+            let escaped = regex::escape(&normalized);
+            let variant_pattern = format!(r"([\w-]+:{}|{})", escaped, escaped);
+            let variant_re =
+                Regex::new(&variant_pattern).unwrap_or_else(|_| Regex::new(r"$^").unwrap());
 
-        let mut size_bytes: u32 = 0;
-        let mut variant_chains: HashSet<String> = HashSet::new();
+            let mut size_bytes: u32 = 0;
+            let mut variant_chains: HashSet<String> = HashSet::new();
 
-        for line in &css_lines {
-            if line.contains(&class_selector) {
-                let decl_start = line.find('{').map_or(0, |i| i);
-                size_bytes += (line.len() - decl_start + 1) as u32;
+            for line in &css_lines {
+                if line.contains(&class_selector) {
+                    let decl_start = line.find('{').map_or(0, |i| i);
+                    size_bytes += (line.len() - decl_start + 1) as u32;
 
-                // Extract variant chains from this line
-                for m in variant_re.find_iter(line) {
-                    let matched = m.as_str();
-                    if matched.contains(':') {
-                        variant_chains.insert(matched.to_string());
+                    // Extract variant chains from this line
+                    for m in variant_re.find_iter(line) {
+                        let matched = m.as_str();
+                        if matched.contains(':') {
+                            variant_chains.insert(matched.to_string());
+                        }
                     }
                 }
             }
-        }
 
-        // Extract dependencies from class name itself (variant prefixes)
-        let parts: Vec<&str> = normalized.split(':').collect();
-        let dependencies: Vec<String> = (0..parts.len().saturating_sub(1))
-            .map(|i| parts[..=i].join(":"))
-            .collect();
+            // Extract dependencies from class name itself (variant prefixes)
+            let parts: Vec<&str> = normalized.split(':').collect();
+            let dependencies: Vec<String> = (0..parts.len().saturating_sub(1))
+                .map(|i| parts[..=i].join(":"))
+                .collect();
 
-        let mut sorted_chains: Vec<String> = variant_chains.into_iter().collect();
-        sorted_chains.sort();
+            let mut sorted_chains: Vec<String> = variant_chains.into_iter().collect();
+            sorted_chains.sort();
 
-        BundleContribution {
-            class_name: normalized,
-            size_bytes,
-            variant_chains: sorted_chains,
-            dependencies,
-            in_css: true,
-        }
-    }).collect()
+            BundleContribution {
+                class_name: normalized,
+                size_bytes,
+                variant_chains: sorted_chains,
+                dependencies,
+                in_css: true,
+            }
+        })
+        .collect()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -5021,9 +5265,9 @@ pub fn calculate_bundle_contributions(
 #[napi(object)]
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct DeadCodeResult {
-    pub dead_in_css: Vec<String>,   // ada di CSS tapi tidak dipakai di source
+    pub dead_in_css: Vec<String>, // ada di CSS tapi tidak dipakai di source
     pub dead_in_source: Vec<String>, // ada di source tapi tidak ada di CSS
-    pub live_classes: Vec<String>,   // ada di keduanya
+    pub live_classes: Vec<String>, // ada di keduanya
     pub total_css_classes: u32,
     pub total_source_classes: u32,
 }
@@ -5034,21 +5278,32 @@ pub struct DeadCodeResult {
 /// Single O(n+m) pass via HashSet — jauh lebih efisien dari
 /// JS yang scan CSS per-class: O(n*m).
 #[napi]
-pub fn detect_dead_code(
-    scan_result_json: String,
-    css: String,
-) -> DeadCodeResult {
+pub fn detect_dead_code(scan_result_json: String, css: String) -> DeadCodeResult {
     #[derive(Deserialize)]
-    struct ScanFile { file: String, classes: Vec<String> }
+    #[allow(dead_code)]
+    struct ScanFile {
+        file: String,
+        classes: Vec<String>,
+    }
     #[derive(Deserialize)]
-    struct ScanResult { #[serde(rename = "uniqueClasses")] unique_classes: Vec<String>, files: Vec<ScanFile> }
+    #[allow(dead_code)]
+    struct ScanResult {
+        #[serde(rename = "uniqueClasses")]
+        unique_classes: Vec<String>,
+        files: Vec<ScanFile>,
+    }
 
     let scan: ScanResult = match serde_json::from_str(&scan_result_json) {
         Ok(s) => s,
-        Err(_) => return DeadCodeResult {
-            dead_in_css: vec![], dead_in_source: vec![], live_classes: vec![],
-            total_css_classes: 0, total_source_classes: 0,
-        },
+        Err(_) => {
+            return DeadCodeResult {
+                dead_in_css: vec![],
+                dead_in_source: vec![],
+                live_classes: vec![],
+                total_css_classes: 0,
+                total_source_classes: 0,
+            }
+        }
     };
 
     let source_classes: HashSet<String> = scan.unique_classes.into_iter().collect();
@@ -5061,17 +5316,23 @@ pub fn detect_dead_code(
         .collect();
     let total_css = css_classes.len() as u32;
 
-    let mut dead_in_css: Vec<String> = css_classes.iter()
+    let mut dead_in_css: Vec<String> = css_classes
+        .iter()
         .filter(|c| !source_classes.contains(*c))
-        .cloned().collect();
+        .cloned()
+        .collect();
 
-    let mut dead_in_source: Vec<String> = source_classes.iter()
+    let mut dead_in_source: Vec<String> = source_classes
+        .iter()
         .filter(|c| !css_classes.contains(*c))
-        .cloned().collect();
+        .cloned()
+        .collect();
 
-    let mut live: Vec<String> = css_classes.iter()
+    let mut live: Vec<String> = css_classes
+        .iter()
         .filter(|c| source_classes.contains(*c))
-        .cloned().collect();
+        .cloned()
+        .collect();
 
     dead_in_css.sort();
     dead_in_source.sort();
@@ -5117,9 +5378,14 @@ pub fn calculate_impact_scores(
     size_weight: Option<f64>,
 ) -> Vec<ImpactScore> {
     #[derive(Deserialize)]
-    struct ScanFile { classes: Vec<String> }
+    #[allow(dead_code)]
+    struct ScanFile {
+        classes: Vec<String>,
+    }
     #[derive(Deserialize)]
-    struct ScanResult { files: Vec<ScanFile> }
+    struct ScanResult {
+        files: Vec<ScanFile>,
+    }
 
     let uw = usage_weight.unwrap_or(0.6);
     let sw = size_weight.unwrap_or(0.4);
@@ -5142,33 +5408,48 @@ pub fn calculate_impact_scores(
     // Pre-calculate bundle sizes
     let css_lines: Vec<&str> = css.lines().collect();
     let contributions = calculate_bundle_contributions(
-        classes.iter().map(|c| c.trim_start_matches('.').to_string()).collect(),
+        classes
+            .iter()
+            .map(|c| c.trim_start_matches('.').to_string())
+            .collect(),
         css.clone(),
     );
-    let size_map: HashMap<String, u32> = contributions.iter()
+    let size_map: HashMap<String, u32> = contributions
+        .iter()
         .map(|c| (c.class_name.clone(), c.size_bytes))
         .collect();
     let max_size = size_map.values().copied().max().unwrap_or(1) as f64;
     let _ = css_lines; // suppress unused warning
 
-    classes.into_iter().map(|cls| {
-        let normalized = cls.trim_start_matches('.').to_string();
-        let usage = usage_counts.get(&normalized).copied().unwrap_or(0);
-        let size = size_map.get(&normalized).copied().unwrap_or(0);
+    classes
+        .into_iter()
+        .map(|cls| {
+            let normalized = cls.trim_start_matches('.').to_string();
+            let usage = usage_counts.get(&normalized).copied().unwrap_or(0);
+            let size = size_map.get(&normalized).copied().unwrap_or(0);
 
-        let usage_score = if max_usage > 0.0 { usage as f64 / max_usage } else { 0.0 };
-        let size_score  = if max_size  > 0.0 { size  as f64 / max_size  } else { 0.0 };
-        let impact_score = (uw * usage_score + sw * size_score).clamp(0.0, 1.0);
+            let usage_score = if max_usage > 0.0 {
+                usage as f64 / max_usage
+            } else {
+                0.0
+            };
+            let size_score = if max_size > 0.0 {
+                size as f64 / max_size
+            } else {
+                0.0
+            };
+            let impact_score = (uw * usage_score + sw * size_score).clamp(0.0, 1.0);
 
-        ImpactScore {
-            class_name: normalized,
-            usage_score,
-            size_score,
-            impact_score,
-            usage_count: usage,
-            size_bytes: size,
-        }
-    }).collect()
+            ImpactScore {
+                class_name: normalized,
+                usage_score,
+                size_score,
+                impact_score,
+                usage_count: usage,
+                size_bytes: size,
+            }
+        })
+        .collect()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -5198,9 +5479,15 @@ pub fn analyze_route_class_distribution(
     scan_result_json: String,
 ) -> Vec<RouteClassMap> {
     #[derive(Deserialize)]
-    struct ScanFile { file: String, classes: Vec<String> }
+    #[allow(dead_code)]
+    struct ScanFile {
+        file: String,
+        classes: Vec<String>,
+    }
     #[derive(Deserialize)]
-    struct ScanResult { files: Vec<ScanFile> }
+    struct ScanResult {
+        files: Vec<ScanFile>,
+    }
 
     let routes: HashMap<String, Vec<String>> = match serde_json::from_str(&route_files_json) {
         Ok(r) => r,
@@ -5212,41 +5499,52 @@ pub fn analyze_route_class_distribution(
     };
 
     // Build file → classes index
-    let file_class_map: HashMap<&str, &Vec<String>> = scan.files.iter()
+    let file_class_map: HashMap<&str, &Vec<String>> = scan
+        .files
+        .iter()
         .map(|f| (f.file.as_str(), &f.classes))
         .collect();
 
     // Build route → classes
-    let route_class_sets: HashMap<&str, HashSet<String>> = routes.iter().map(|(route, files)| {
-        let classes: HashSet<String> = files.iter()
-            .filter_map(|f| file_class_map.get(f.as_str()))
-            .flat_map(|cls| cls.iter().cloned())
-            .collect();
-        (route.as_str(), classes)
-    }).collect();
+    let route_class_sets: HashMap<&str, HashSet<String>> = routes
+        .iter()
+        .map(|(route, files)| {
+            let classes: HashSet<String> = files
+                .iter()
+                .filter_map(|f| file_class_map.get(f.as_str()))
+                .flat_map(|cls| cls.iter().cloned())
+                .collect();
+            (route.as_str(), classes)
+        })
+        .collect();
 
     // Find exclusive classes per route (not in any other route)
-    route_class_sets.iter().map(|(route, classes)| {
-        let exclusive: Vec<String> = classes.iter()
-            .filter(|cls| {
-                route_class_sets.iter()
-                    .filter(|(r, _)| **r != *route)
-                    .all(|(_, other_classes)| !other_classes.contains(*cls))
-            })
-            .cloned()
-            .collect::<std::collections::BTreeSet<_>>()
-            .into_iter()
-            .collect();
+    route_class_sets
+        .iter()
+        .map(|(route, classes)| {
+            let exclusive: Vec<String> = classes
+                .iter()
+                .filter(|cls| {
+                    route_class_sets
+                        .iter()
+                        .filter(|(r, _)| **r != *route)
+                        .all(|(_, other_classes)| !other_classes.contains(*cls))
+                })
+                .cloned()
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect();
 
-        let mut sorted_classes: Vec<String> = classes.iter().cloned().collect();
-        sorted_classes.sort();
-        let count = sorted_classes.len() as u32;
+            let mut sorted_classes: Vec<String> = classes.iter().cloned().collect();
+            sorted_classes.sort();
+            let count = sorted_classes.len() as u32;
 
-        RouteClassMap {
-            route: route.to_string(),
-            classes: sorted_classes,
-            exclusive_classes: exclusive,
-            class_count: count,
-        }
-    }).collect()
+            RouteClassMap {
+                route: route.to_string(),
+                classes: sorted_classes,
+                exclusive_classes: exclusive,
+                class_count: count,
+            }
+        })
+        .collect()
 }

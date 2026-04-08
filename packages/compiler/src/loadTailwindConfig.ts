@@ -65,7 +65,6 @@ export const loadTailwindConfig = (cwd = process.cwd()): TailwindConfig => {
         const mod = _require(fullPath)
         const config = mod.default ?? mod
         configCache.set(config, cwd)
-        console.log(`[tailwind-styled-v4] Using config: ${file}`)
         return config
       } catch {
         // continue to next file
@@ -73,7 +72,6 @@ export const loadTailwindConfig = (cwd = process.cwd()): TailwindConfig => {
     }
   }
 
-  console.log("[tailwind-styled-v4] No tailwind config found → using built-in preset")
   const { defaultPreset } = _require("../../preset/src/defaultPreset")
   configCache.set(defaultPreset, cwd)
   return defaultPreset
@@ -131,7 +129,6 @@ export const bootstrapZeroConfig = (
     const cssPath = path.join(cwd, appDir, "globals.css")
     if (fs.existsSync(path.dirname(cssPath))) {
       fs.writeFileSync(cssPath, defaultGlobalCss)
-      console.log(`[tailwind-styled-v4] Generated ${cssPath}`)
       return true
     }
     return false

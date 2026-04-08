@@ -3,8 +3,10 @@
   "compilerOptions": {
     "outDir": "dist",
     "declarationDir": "dist",
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
     "types": [
-      "node"
+      
     ]
   },
   "include": [
