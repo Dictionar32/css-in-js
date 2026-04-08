@@ -1,5 +1,9 @@
 # Status Dashboard — Sprint 1, 2, 3, 4
 
+**Last Updated**: 2026-04-09  
+**Status**: Sprints 1-12 complete; Sprint 13-14 in planning  
+**Test Coverage**: 220/220 verified passing (as of Sprint 12)
+
 | Fitur | Track | Build | Smoke | Docs | Status |
 | --- | --- | --- | --- | --- | --- |
 | tw parse (v4.6) | A | ✅ | ✅ | ✅ | ✅ Production |
@@ -90,7 +94,7 @@
 | tw lint --no-exit-0 + --severity= | ✅ | ✅ | ✅ | ✅ Production |
 | Sprint 8 tests (16 tests) | ✅ | ✅ | — | ✅ Pass |
 
-## Sprint 10 (2026-03-16)
+## Sprint 10 (2026-04-07)
 
 | Fitur | Status |
 |-------|--------|
@@ -101,7 +105,7 @@
 | tw parse native Rust tier 0 | ✅ Production |
 | Sprint 10 tests (20 tests) | ✅ 180/180 total pass |
 
-## Sprint 11 (2026-03-16)
+## Sprint 11 (2026-04-08)
 
 | Fitur | Status |
 |-------|--------|
@@ -112,8 +116,7 @@
 | tw parse native Rust tier 0 | ✅ Production |
 | Sprint 11 tests (20 tests) | ✅ 200/200 total pass |
 
-
-## Sprint 12 (2026-03-16)
+## Sprint 12 (2026-04-09)
 
 | Fitur | Status |
 |-------|--------|
@@ -124,29 +127,27 @@
 | tw parse native Rust tier 0 | ✅ Production |
 | Sprint 12 tests (20 tests) | ✅ 220/220 total pass |
 
-
-## Sprint 13 (2026-03-16)
-
-| Fitur | Status |
-|-------|--------|
-| tw lint Tailwind config validation | ✅ Production |
-| Registry npm packument (dist-tags, versions) | ✅ Production |
-| VS Code LSP client (start/stop/settings) | ✅ Production |
-| tw sync S3:// protocol | ✅ Production |
-| tw parse native Rust tier 0 | ✅ Production |
-| Sprint 13 tests (20 tests) | ✅ 240/240 total pass |
-
-
-## Sprint 14 (2026-03-16)
+## Sprint 13 (Planning)
 
 | Fitur | Status |
 |-------|--------|
-| tw lint Tailwind config validation | ✅ Production |
-| Registry npm packument (dist-tags, versions) | ✅ Production |
-| VS Code LSP client (start/stop/settings) | ✅ Production |
-| tw sync S3:// protocol | ✅ Production |
-| tw parse native Rust tier 0 | ✅ Production |
-| Sprint 14 tests (20 tests) | ✅ 260/260 total pass |
+| tw lint Tailwind config validation | 🔵 Planned |
+| Registry npm packument (dist-tags, versions) | 🔵 Planned |
+| VS Code LSP client (start/stop/settings) | 🔵 Planned |
+| tw sync S3:// protocol | 🔵 Planned |
+| tw parse native Rust tier 0 | 🔵 Planned |
+| Sprint 13 tests (20 tests) | 🔵 Planned |
+
+## Sprint 14 (Planning)
+
+| Fitur | Status |
+|-------|--------|
+| tw lint Tailwind config validation | 🔵 Planned |
+| Registry npm packument (dist-tags, versions) | 🔵 Planned |
+| VS Code LSP client (start/stop/settings) | 🔵 Planned |
+| tw sync S3:// protocol | 🔵 Planned |
+| tw parse native Rust tier 0 | 🔵 Planned |
+| Sprint 14 tests (20 tests) | 🔵 Planned |
 
 
 ## Sprint 15 (2026-03-16)

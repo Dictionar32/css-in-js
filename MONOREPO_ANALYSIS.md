@@ -1,64 +1,229 @@
 # Monorepo Structure Analysis: tailwind-styled-v4
 
-**Analysis Date**: March 30, 2026  
+**Analysis Date**: March 30, 2026 (Updated: April 9, 2026)  
 **Workspace**: `packages/` directory with 28 packages  
+**Architecture Pattern**: Domain-Driven Design (DDD) v2 restructure  
 **Key Focus**: CSS-in-JS integration, framework adapters, and cross-package dependencies
 
 ---
 
-## 1. Package Inventory & Dependencies
+## 0. Architecture Overview: DDD 3-Layer Structure
 
-### Core Infrastructure (5 packages)
-| Package | Path | Purpose | Key Dependencies |
-|---------|------|---------|------------------|
-| `@tailwind-styled/compiler` | [packages/compiler/package.json](packages/compiler/package.json) | Compiler pipeline & transform logic | `@tailwind-styled/plugin-api`, `@tailwind-styled/syntax`, `postcss`, `tailwind-merge`, `inversify` |
-| `@tailwind-styled/engine` | [packages/engine/package.json](packages/engine/package.json) | Build engine orchestration | `@tailwind-styled/compiler`, `@tailwind-styled/scanner`, `@tailwind-styled/analyzer`, `inversify` |
-| `@tailwind-styled/scanner` | [packages/scanner/src/index.ts](packages/scanner/src/index.ts) | CSS class scanner (Rust native) | `@tailwind-styled/shared`, uses native `tailwind_styled_parser.node` |
-| `@tailwind-styled/shared` | [packages/shared/package.json](packages/shared/package.json) | Cross-package utilities | `inversify` — exports: `LRUCache`, `createLogger`, `hashContent`, `debounce`, `throttle` |
-| `@tailwind-styled/plugin-api` | [packages/plugin-api/package.json](packages/plugin-api/package.json) | Plugin contracts & registry | `zod` — internal plugin types and runtime registry |
+### v2 Restructure (2026-03) — 3 Organizational Layers
 
-### Framework Adapters (5 packages)
-| Package | Path | Use Pattern | CSS-in-JS API | Integration Method |
-|---------|------|------|---|---|
-| `@tailwind-styled/next` | [packages/next/package.json](packages/next/package.json) | Next.js 15+ (RSC compatible) | Via `tailwind-styled-v4` | `withTailwindStyled()` in `next.config.ts` (webpack+turbopack) |
-| `@tailwind-styled/vite` | [packages/vite/package.json](packages/vite/package.json) | Vite 5+ | Via `tailwind-styled-v4` | `tailwindStyledPlugin()` in `vite.config.ts` |
-| `@tailwind-styled/vue` | [packages/vue/package.json](packages/vue/package.json) | Vue 3.3+ Composition API | `tw()`, `cv()`, `extend()` | `TailwindStyledPlugin` Vue plugin |
-| `@tailwind-styled/svelte` | [packages/svelte/package.json](packages/svelte/package.json) | Svelte 4/5 (runes compatible) | `cv()`, `tw()`, `use:styled` action | Direct usage in components |
-| `@tailwind-styled/rspack` | [packages/rspack/package.json](packages/rspack/package.json) | Rspack bundler | Same pipeline as Vite | Rspack plugin integration |
+The monorepo uses **Domain-Driven Design** to separate concerns:
 
-### Runtime & Component Libraries (4 packages)
-| Package | Path | Purpose | Key Exports |
-|---------|------|---------|-------------|
-| `@tailwind-styled/runtime` | [packages/runtime/package.json](packages/runtime/package.json) | React runtime helpers | `SubComponentDef`, `ConditionalProps`, live token helpers |
-| `@tailwind-styled/runtime-css` | [packages/runtime-css/package.json](packages/runtime-css/package.json) | CSS runtime generation | CSS runtime for dynamic styling |
-| `@tailwind-styled/theme` | [packages/theme/package.json](packages/theme/package.json) | Live token engine + theme reader | `liveToken`, `liveTokenEngine`, `setToken`, `getToken` |
-| `@tailwind-styled/preset` | [packages/preset/package.json](packages/preset/package.json) | Tailwind preset configuration | Base preset for projects |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ PRESENTATION/ (5 packages)                                      │
+│ Framework-specific adapters for React ecosystem                 │
+│ Depend on: DOMAIN, INFRASTRUCTURE packages                      │
+├─────────────────────────────────────────────────────────────────┤
+│  • packages/next/      — Next.js 15+ (RSC aware)                │
+│  • packages/vite/      — Vite 5+ plugin                         │
+│  • packages/svelte/    — Svelte 4/5 (runes aware)               │
+│  • packages/vue/       — Vue 3.3+ Composition API               │
+│  • packages/rspack/    — Rspack bundler integration             │
+└──────────────────────┬───────────────────────────────────────────┘
+                       │ consumes
+┌──────────────────────▼───────────────────────────────────────────┐
+│ INFRASTRUCTURE/ (6 packages)                                     │
+│ CLI tools, dashboards, external integrations, DevTools           │
+│ Depend on: DOMAIN packages                                       │
+├─────────────────────────────────────────────────────────────────┤
+│  • packages/cli/           — tw CLI (parse, lint, sync, etc)     │
+│  • packages/dashboard/     — Metrics & build analytics UI        │
+│  • packages/devtools/      — Dev utilities & helpers             │
+│  • packages/vscode/        — VS Code language extension (LSP)    │
+│  • packages/storybook-addon/ — Storybook component integration   │
+│  • packages/studio-desktop/ — Desktop Studio (Electron app)      │
+└──────────────────────┬───────────────────────────────────────────┘
+                       │ uses
+┌──────────────────────▼───────────────────────────────────────────┐
+│ DOMAIN/ (17 packages)                                            │
+│ Pure business logic — Reusable across ALL frameworks             │
+│ No dependencies between layers; self-contained logic             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│ Core DSL Engine:                                                 │
+│  • packages/compiler/    — CSS compilation pipeline              │
+│  • packages/scanner/     — Rust-powered class scanning           │
+│  • packages/engine/      — Build orchestration                   │
+│  • packages/syntax/      — Parser & AST handling                 │
+│  • packages/core/        — Core contracts & types                │
+│                                                                   │
+│ Feature Domains:                                                 │
+│  • packages/plugin/      — Plugin system                         │
+│  • packages/plugin-api/  — Plugin contracts                      │
+│  • packages/plugin-registry/ — Plugin discovery                  │
+│  • packages/theme/       — Live token engine                     │
+│  • packages/preset/      — Configuration presets                 │
+│  • packages/animate/     — Animation utilities                   │
+│  • packages/atomic/      — Atomic CSS generation                 │
+│  • packages/runtime/     — React runtime helpers                 │
+│  • packages/runtime-css/ — CSS runtime generation                │
+│                                                                   │
+│ Cross-Cutting Concerns:                                          │
+│  • packages/shared/      — Utilities, errors, logging            │
+│  • packages/analyzer/    — Static analysis                       │
+│  • packages/testing/     — Testing utilities                     │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Development & Tooling (6 packages)
-| Package | Path | Purpose |
-|---------|------|---------|
-| `@tailwind-styled/cli` | [packages/cli/package.json](packages/cli/package.json) | Project generator & CLI tools |
-| `@tailwind-styled/testing` | [packages/testing/package.json](packages/testing/package.json) | Jest/Vitest matchers & utilities |
-| `@tailwind-styled/storybook-addon` | [packages/storybook-addon/package.json](packages/storybook-addon/package.json) | Storybook integration helpers |
-| `@tailwind-styled/dashboard` | [packages/dashboard/package.json](packages/dashboard/package.json) | Metrics & build analytics UI |
-| `@tailwind-styled/devtools` | [packages/devtools/package.json](packages/devtools/package.json) | Development utilities |
-| `@tailwind-styled/analyzer` | [packages/analyzer/package.json](packages/analyzer/package.json) | Static analysis & optimization |
-
-### Language Bindings & Extensions (8 packages)
-| Package | Path | Purpose |
-|---------|------|---------|
-| `@tailwind-styled/syntax` | [packages/syntax/package.json](packages/syntax/package.json) | Parser & AST handling |
-| `@tailwind-styled/atomic` | [packages/atomic/package.json](packages/atomic/package.json) | Atomic CSS generation |
-| `@tailwind-styled/animate` | [packages/animate/package.json](packages/animate/package.json) | Animation utilities |
-| `@tailwind-styled/plugin` | [packages/plugin/package.json](packages/plugin/package.json) | Plugin system implementation |
-| `@tailwind-styled/plugin-registry` | [packages/plugin-registry/package.json](packages/plugin-registry/package.json) | Plugin discovery & install |
-| `@tailwind-styled/studio-desktop` | [packages/studio-desktop/package.json](packages/studio-desktop/package.json) | Component studio (Electron) |
-| `@tailwind-styled/vscode` | [packages/vscode/package.json](packages/vscode/package.json) | VS Code extension |
-| `@tailwind-styled/_experiments` | [packages/_experiments/](packages/_experiments/) | Experimental features |
+**Benefits of DDD Structure:**
+- **Clear separation of concerns** — Each layer has distinct responsibility
+- **Framework agnostic core** — DOMAIN packages work with any framework
+- **Testability** — DOMAIN packages testable without framework dependencies
+- **Scalability** — Easy to add new PRESENTATION adapters without touching core logic
+- **Maintainability** — Clear dependency flow prevents circular imports
 
 ---
 
-## 2. Cross-Package Dependency Map
+## 1. Package Inventory & Dependencies (Reorganized by DDD Layers)
+
+### DOMAIN Layer — Core Business Logic (17 packages)
+
+#### DSL & Compilation Engine (5 packages)
+| Package | Path | Purpose | Key Dependencies |
+|---------|------|---------|------------------|
+| `@tailwind-styled/compiler` | [packages/compiler/package.json](packages/compiler/package.json) | CSS compilation pipeline & transform logic | `@tailwind-styled/plugin-api`, `@tailwind-styled/syntax`, `postcss`, `tailwind-merge`, `inversify` |
+| `@tailwind-styled/engine` | [packages/engine/package.json](packages/engine/package.json) | Build orchestration & coordination | `@tailwind-styled/compiler`, `@tailwind-styled/scanner`, `@tailwind-styled/analyzer`, `inversify` |
+| `@tailwind-styled/scanner` | [packages/scanner/src/index.ts](packages/scanner/src/index.ts) | CSS class scanner (Rust native) | `@tailwind-styled/shared`, uses native `tailwind_styled_parser.node` |
+| `@tailwind-styled/syntax` | [packages/syntax/package.json](packages/syntax/package.json) | Parser & AST handling | `@tailwind-styled/shared` |
+| `@tailwind-styled/core` | [packages/core/package.json](packages/core/package.json) | Core contracts & utility types | (foundation, no internal deps) |
+
+#### Feature & Capability Domains (9 packages)
+| Package | Path | Purpose | Key Dependencies |
+|---------|------|---------|------------------|
+| `@tailwind-styled/plugin` | [packages/plugin/package.json](packages/plugin/package.json) | Plugin system implementation | `@tailwind-styled/compiler`, `@tailwind-styled/plugin-api` |
+| `@tailwind-styled/plugin-api` | [packages/plugin-api/package.json](packages/plugin-api/package.json) | Plugin contracts & registry | `zod`, (foundation) |
+| `@tailwind-styled/plugin-registry` | [packages/plugin-registry/package.json](packages/plugin-registry/package.json) | Plugin discovery & install | `@tailwind-styled/plugin-api` |
+| `@tailwind-styled/theme` | [packages/theme/package.json](packages/theme/package.json) | Live token engine + theme reader | (foundation, no internal deps) |
+| `@tailwind-styled/preset` | [packages/preset/package.json](packages/preset/package.json) | Tailwind preset configuration | (foundation) |
+| `@tailwind-styled/animate` | [packages/animate/package.json](packages/animate/package.json) | Animation utilities domain | (foundation) |
+| `@tailwind-styled/atomic` | [packages/atomic/package.json](packages/atomic/package.json) | Atomic CSS generation | `@tailwind-styled/compiler` |
+| `@tailwind-styled/runtime` | [packages/runtime/package.json](packages/runtime/package.json) | React runtime helpers | `@tailwind-styled/theme` |
+| `@tailwind-styled/runtime-css` | [packages/runtime-css/package.json](packages/runtime-css/package.json) | CSS runtime generation | (foundation) |
+
+#### Cross-Cutting Infrastructure (3 packages)
+| Package | Path | Purpose |
+|---------|------|---------|
+| `@tailwind-styled/shared` | [packages/shared/package.json](packages/shared/package.json) | Cross-package utilities, errors, logging |
+| `@tailwind-styled/analyzer` | [packages/analyzer/package.json](packages/analyzer/package.json) | Static analysis & optimization |
+| `@tailwind-styled/testing` | [packages/testing/package.json](packages/testing/package.json) | Jest/Vitest matchers & testing utilities |
+
+### INFRASTRUCTURE Layer — Tools & External Services (6 packages)
+| Package | Path | Purpose | Consumers |
+|---------|------|---------|-----------|
+| `@tailwind-styled/cli` | [packages/cli/package.json](packages/cli/package.json) | Project generator & CLI commands (tw parse, lint, sync, optimize, etc) | External users, CI/CD |
+| `@tailwind-styled/dashboard` | [packages/dashboard/package.json](packages/dashboard/package.json) | Metrics & build analytics UI (Express server) | Web browsers, PRESENTATION adapters |
+| `@tailwind-styled/devtools` | [packages/devtools/package.json](packages/devtools/package.json) | Development utilities & helpers | PRESENTATION adapters |
+| `@tailwind-styled/vscode` | [packages/vscode/package.json](packages/vscode/package.json) | VS Code language extension (LSP protocol) | VS Code IDE |
+| `@tailwind-styled/storybook-addon` | [packages/storybook-addon/package.json](packages/storybook-addon/package.json) | Storybook component integration | Storybook UI |
+| `@tailwind-styled/studio-desktop` | [packages/studio-desktop/package.json](packages/studio-desktop/package.json) | Component studio desktop app (Electron) | Desktop users |
+
+### PRESENTATION Layer — Framework Adapters (5 packages)
+| Package | Path | Framework | Integration Method | Depends On |
+|---------|------|---------|---|---|
+| `@tailwind-styled/next` | [packages/next/package.json](packages/next/package.json) | Next.js 15+ (RSC compatible) | `withTailwindStyled()` in `next.config.ts` (webpack+turbopack) | DOMAIN (compiler, engine) |
+| `@tailwind-styled/vite` | [packages/vite/package.json](packages/vite/package.json) | Vite 5+ | `tailwindStyledPlugin()` in `vite.config.ts` | DOMAIN (compiler, engine) |
+| `@tailwind-styled/vue` | [packages/vue/package.json](packages/vue/package.json) | Vue 3.3+ Composition API | `TailwindStyledPlugin` Vue plugin + `tw()`, `cv()`, `extend()` | DOMAIN (runtime, theme) |
+| `@tailwind-styled/svelte` | [packages/svelte/package.json](packages/svelte/package.json) | Svelte 4/5 (runes compatible) | Direct usage: `cv()`, `tw()`, `use:styled` action | DOMAIN (runtime, theme) |
+| `@tailwind-styled/rspack` | [packages/rspack/package.json](packages/rspack/package.json) | Rspack bundler | Rspack plugin integration (similar to Vite) | DOMAIN (compiler, engine) |
+
+---
+
+### Core Infrastructure (5 packages)
+
+---
+
+## 2. Cross-Package Dependency Map (DDD Layered Architecture)
+
+### Dependency Flow (Top-to-Bottom)
+
+```
+PRESENTATION LAYER (Framework Adapters)
+├─ next/    ──────┐
+├─ vite/    ──────┤
+├─ svelte/  ──────┼─── Consume ──→  INFRASTRUCTURE + DOMAIN
+├─ vue/     ──────┤
+└─ rspack/  ──────┘
+
+INFRASTRUCTURE LAYER (Tools & Services)
+├─ cli/
+├─ dashboard/
+├─ devtools/
+├─ vscode/
+├─ storybook-addon/
+└─ studio-desktop/ ──────┐
+                         ├─── Consume ──→  DOMAIN LAYER
+DOMAIN LAYER (Business Logic)
+├─ compiler ──────────┬──┐
+├─ engine ────────────┤  ├─── Foundation ──→  shared, core
+├─ scanner ──────────┬┘  │
+├─ plugin/api ────────┤  │
+├─ theme ──────────────┤  │
+├─ atomic ─────────────┤  │
+├─ runtime ────────────┤  │
+└─ [13 more packages] ─┴──┘
+```
+
+### Detailed Dependency Hierarchy (Bottom-up from DOMAIN)
+
+**Level 0 — Foundation (No internal dependencies):**
+```
+DOMAIN Layer:
+  ├─ shared        (utilities, errors, logging foundation)
+  ├─ core          (core types & contracts)
+  ├─ plugin-api    (contracts only, uses zod)
+  ├─ theme         (token engine, standalone)
+  ├─ preset        (config presets, standalone)
+  ├─ animate       (animations, standalone)
+  └─ runtime-css   (runtime utilities, standalone)
+```
+
+**Level 1 — Core DSL (Depend on Level 0):**
+```
+DOMAIN Layer:
+  ├─ syntax        (uses: shared)
+  ├─ compiler      (uses: shared, plugin-api)
+  ├─ scanner       (uses: shared, native parser)
+  └─ analyzer      (uses: compiler)
+```
+
+**Level 2 — Orchestration & Features (Depend on Level 0-1):**
+```
+DOMAIN Layer:
+  ├─ engine        (uses: compiler, scanner, analyzer)
+  ├─ plugin        (uses: compiler, plugin-api)
+  ├─ atomic        (uses: compiler)
+  ├─ runtime       (uses: theme)
+  └─ plugin-registry (uses: plugin-api)
+```
+
+**Level 3 — INFRASTRUCTURE Tools (Depend on DOMAIN):**
+```
+INFRASTRUCTURE Layer:
+  ├─ cli           (uses: engine, compiler, scanner + all DOMAIN)
+  ├─ dashboard     (uses: engine, metrics from builds)
+  ├─ devtools      (uses: DOMAIN packages)
+  ├─ vscode        (uses: scanner, syntax for LSP)
+  ├─ storybook-addon (uses: DOMAIN for integration)
+  └─ studio-desktop (uses: DOMAIN + engine for orchestration)
+```
+
+**Level 4 — PRESENTATION Adapters (Depend on DOMAIN + INFRASTRUCTURE):**
+```
+PRESENTATION Layer:
+  ├─ next          (uses: compiler, engine, plugin)
+  ├─ vite          (uses: compiler, engine, plugin)
+  ├─ rspack        (uses: compiler, engine, plugin)
+  ├─ vue           (uses: runtime, theme)
+  └─ svelte        (uses: runtime, theme)
+```
+
+---
 
 ### Dependency Hierarchy (Bottom-up)
 
@@ -82,17 +247,6 @@ Level 3 (Depend on Level 2):
 
 Level 4 (Framework Adapters - Depend on Level 3):
   ├─ @tailwind-styled/next (uses: compiler, engine, plugin)
-  ├─ @tailwind-styled/vite (uses: compiler, engine, plugin)
-  ├─ @tailwind-styled/vue (peer: vue, tailwind-merge)
-  ├─ @tailwind-styled/svelte (peer: svelte, tailwind-merge)
-  └─ @tailwind-styled/rspack (uses: compiler, engine, plugin)
-
-Level 5 (Dev Tools & CLI):
-  ├─ @tailwind-styled/cli (uses: all core packages)
-  ├─ @tailwind-styled/testing (test matchers)
-  ├─ @tailwind-styled/storybook-addon (Storybook integration)
-  ├─ @tailwind-styled/dashboard (metrics UI)
-  └─ @tailwind-styled/plugin-registry (plugin search/install)
 ```
 
 ### Critical Cross-Package Dependencies (Bundlers)
@@ -105,6 +259,28 @@ Level 5 (Dev Tools & CLI):
 **Vite Integration** ([packages/vite/package.json](packages/vite/package.json)):
 - Depends on: `@tailwind-styled/compiler`, `@tailwind-styled/engine`, `@tailwind-styled/plugin`
 - Exports: `tailwindStyledPlugin()` for plugin array
+
+---
+
+## 📝 Historical Note: v1 vs v2 Restructure
+
+**Before v2 (Early 2026)**: Packages were organized by functional concern:
+- Core Infrastructure (compiler, engine, scanner, shared, plugin-api)
+- Framework Adapters (next, vite, vue, svelte, rspack)
+- Runtime & Component Libraries (runtime, runtime-css, theme, preset)
+- Development & Tooling (cli, testing, storybook-addon, dashboard, devtools, analyzer)
+- Language Bindings & Extensions (syntax, atomic, animate, plugin, plugin-registry, studio-desktop, vscode)
+
+**After v2 (2026-03 Restructure)**: Adopted Domain-Driven Design (DDD) with 3 organizational layers:
+- **DOMAIN/** — Business logic, reusable across frameworks (17 packages)
+- **INFRASTRUCTURE/** — Tools, CLI, external integrations (6 packages)
+- **PRESENTATION/** — Framework-specific adapters (5 packages)
+
+This restructuring improves:
+- Clear separation of concerns
+- Reduced circular dependencies
+- Better testability of domain logic
+- Easier to add new framework adapters without modifying core
 
 ---
 
