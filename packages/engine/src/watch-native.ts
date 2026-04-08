@@ -5,14 +5,18 @@
  * No JavaScript fallback — native Rust binding must be available.
  */
 
-import { createRequire } from "node:module"
 import path from "node:path"
-import { createLogger } from "@tailwind-styled/shared"
+import {
+  createLogger,
+  loadNativeBinding,
+  resolveNativeBindingCandidates,
+  resolveRuntimeDir,
+} from "@tailwind-styled/shared"
 
 interface NativeWatchBinding {
-  startWatch?: (rootDir: string) => { status: string; handleId: number }
-  pollWatchEvents?: (handleId: number) => Array<{ kind: string; path: string }>
-  stopWatch?: (handleId: number) => boolean
+  startWatch: (rootDir: string) => { status: string; handleId: number }
+  pollWatchEvents: (handleId: number) => Array<{ kind: string; path: string }>
+  stopWatch: (handleId: number) => boolean
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -36,25 +40,27 @@ const getBinding = (): NativeWatchBinding => {
     return watchBindingState.binding
   }
 
-  const runtimeDir = typeof __dirname === "string" ? __dirname : process.cwd()
-  const req = createRequire(import.meta.url)
+  const runtimeDir = resolveRuntimeDir(undefined, import.meta.url)
+  const candidates = resolveNativeBindingCandidates({ runtimeDir })
+  const loaded = loadNativeBinding<NativeWatchBinding>({
+    runtimeDir,
+    candidates,
+    isValid: (module: unknown): module is NativeWatchBinding => {
+      const mod = module as Partial<NativeWatchBinding> | null | undefined
+      return !!(
+        mod &&
+        typeof mod.startWatch === "function" &&
+        typeof mod.pollWatchEvents === "function" &&
+        typeof mod.stopWatch === "function"
+      )
+    },
+    invalidExportMessage:
+      "native module does not expose watch API (startWatch/pollWatchEvents/stopWatch)",
+  })
 
-  const candidates = [
-    path.resolve(process.cwd(), "native", "tailwind_styled_parser.node"),
-    path.resolve(runtimeDir, "..", "..", "..", "..", "native", "tailwind_styled_parser.node"),
-    path.resolve(runtimeDir, "..", "..", "..", "native", "tailwind_styled_parser.node"),
-  ]
-
-  for (const c of candidates) {
-    try {
-      const mod = req(c) as NativeWatchBinding
-      if (mod?.startWatch && mod?.pollWatchEvents && mod?.stopWatch) {
-        watchBindingState.binding = mod
-        return mod
-      }
-    } catch {
-      // try next candidate
-    }
+  if (loaded.binding) {
+    watchBindingState.binding = loaded.binding
+    return loaded.binding
   }
 
   watchBindingState.binding = null
@@ -72,7 +78,6 @@ const log = createLogger("engine:watch-native")
 
 interface NativeWatchOptions {
   pollIntervalMs?: number
-  extensions?: string[]
   onError?: (error: Error) => void
 }
 
@@ -107,7 +112,7 @@ export function watchWorkspace(
 
   const result = (() => {
     try {
-      return binding.startWatch!(resolvedRoot)
+      return binding.startWatch(resolvedRoot)
     } catch (error) {
       const normalized = error instanceof Error ? error : new Error(String(error))
       throw new Error(
@@ -130,12 +135,13 @@ export function watchWorkspace(
   const timer = setInterval(() => {
     const raw = (() => {
       try {
-        return binding.pollWatchEvents!(handleId)
+        return binding.pollWatchEvents(handleId)
       } catch (error) {
         const normalized = error instanceof Error ? error : new Error(String(error))
-        log.warn(`watch Rust poll failed: ${normalized.message}`)
+        clearInterval(timer)
+        log.error(`watch Rust poll failed: ${normalized.message}`)
         options.onError?.(normalized)
-        return []
+        throw normalized
       }
     })()
 
@@ -162,7 +168,7 @@ export function watchWorkspace(
     engine: "rust-notify",
     stop() {
       clearInterval(timer)
-      binding.stopWatch!(handleId)
+      binding.stopWatch(handleId)
     },
   }
 }

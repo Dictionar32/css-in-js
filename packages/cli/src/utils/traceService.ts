@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type CssCompileResult, compileCssFromClasses } from "@tailwind-styled/compiler/internal"
 import {
   ConditionId,

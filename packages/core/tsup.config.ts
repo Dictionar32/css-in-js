@@ -13,7 +13,7 @@ export default defineConfig({
     theme: "src/theme.ts",
     vite: "src/vite.ts"
   },
-  format: ["cjs", "esm"],
+  format: ["esm"],
   dts: true,
   splitting: false,
   sourcemap: true,

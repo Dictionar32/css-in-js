@@ -3,27 +3,18 @@
  *
  * Uses @tailwind-styled/shared for native binding resolution.
  */
-import path from "node:path"
-import { fileURLToPath } from "node:url"
 import {
   createDebugLogger,
   loadNativeBinding,
   resolveNativeBindingCandidates,
+  resolveRuntimeDir,
   TwError,
 } from "@tailwind-styled/shared"
 
 const log = createDebugLogger("engine:native")
 
-function getDirname(): string {
-  if (typeof __dirname !== "undefined") return __dirname
-  if (typeof import.meta !== "undefined" && import.meta.url) {
-    return path.dirname(fileURLToPath(import.meta.url))
-  }
-  return process.cwd()
-}
-
 interface NativeEngineBinding {
-  computeIncrementalDiff?: (
+  computeIncrementalDiff: (
     previousJson: string,
     currentJson: string
   ) => {
@@ -32,8 +23,8 @@ interface NativeEngineBinding {
     changedFiles: string[]
     unchangedFiles: number
   } | null
-  hashFileContent?: (content: string) => string | null
-  processFileChange?: (
+  hashFileContent: (content: string) => string | null
+  processFileChange: (
     filepath: string,
     newClasses: string[],
     content: string | null
@@ -88,7 +79,9 @@ const isValidEngineBinding = (module: unknown): module is NativeEngineBinding =>
   const candidate = module as Partial<NativeEngineBinding> | null | undefined
   return !!(
     candidate &&
-    (candidate.computeIncrementalDiff || candidate.processFileChange || candidate.hashFileContent)
+    typeof candidate.computeIncrementalDiff === "function" &&
+    typeof candidate.processFileChange === "function" &&
+    typeof candidate.hashFileContent === "function"
   )
 }
 
@@ -138,7 +131,7 @@ const createEngineBindingLoader = () => {
       return cached
     }
 
-    const runtimeDir = getDirname()
+    const runtimeDir = resolveRuntimeDir(undefined, import.meta.url)
     const candidates = resolveNativeBindingCandidates({
       runtimeDir,
       includeDefaultCandidates: true,
@@ -192,7 +185,7 @@ export function computeIncrementalDiff(
   changedFiles: string[]
   unchangedFiles: number
 } {
-  const result = getNativeEngineBinding().computeIncrementalDiff?.(previousJson, currentJson)
+  const result = getNativeEngineBinding().computeIncrementalDiff(previousJson, currentJson)
   if (result === null || result === undefined) {
     throw new TwError(
       "rust",
@@ -204,7 +197,7 @@ export function computeIncrementalDiff(
 }
 
 export function hashFileContent(content: string): string {
-  const result = getNativeEngineBinding().hashFileContent?.(content)
+  const result = getNativeEngineBinding().hashFileContent(content)
   if (result === null || result === undefined) {
     throw new TwError(
       "rust",
@@ -220,7 +213,7 @@ export function processFileChange(
   newClasses: string[],
   content: string | null
 ): { added: string[]; removed: string[] } {
-  const result = getNativeEngineBinding().processFileChange?.(filepath, newClasses, content)
+  const result = getNativeEngineBinding().processFileChange(filepath, newClasses, content)
   if (result === null || result === undefined) {
     throw new TwError(
       "rust",

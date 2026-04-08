@@ -6,7 +6,6 @@
 
 import {
   createDebugLogger,
-  getNativeDisableEnvVar,
   loadNativeBinding,
   resolveNativeBindingCandidates,
   resolveRuntimeDir,
@@ -157,20 +156,6 @@ const createBridgeLoader = () => {
         throw new TwError("rust", "NATIVE_BINDING_UNAVAILABLE", NATIVE_UNAVAILABLE_MESSAGE)
       }
       return bridgeState.current
-    }
-
-    const disabledByEnv = getNativeDisableEnvVar()
-    if (disabledByEnv) {
-      bridgeState.current = null
-      throw new TwError("rust", "NATIVE_BINDING_UNAVAILABLE",
-        `[tailwind-styled/compiler v5] Native binding is required but not available.\n` +
-        `The ${disabledByEnv} environment variable is set.\n` +
-        `This package requires native Rust bindings. There is no JavaScript fallback.\n` +
-        `Please ensure:\n` +
-        `  1. The native module is properly installed\n` +
-        `  2. You have run: npm run build:rust (or use prebuilt binary)\n` +
-        `\n` +
-        `For help, see: https://tailwind-styled.dev/docs/install`)
     }
 
     const runtimeDir = resolveRuntimeDir(

@@ -6,6 +6,8 @@
  * clear error messages for unsupported versions.
  */
 
+import { createRequire } from "node:module"
+
 export interface TailwindInfo {
   version: string
   major: number
@@ -14,9 +16,10 @@ export interface TailwindInfo {
 }
 
 export function detectTailwind(): TailwindInfo {
+  const runtimeRequire = createRequire(import.meta.url)
   try {
-    const pkgPath = require.resolve("tailwindcss/package.json")
-    const { version } = require(pkgPath)
+    const pkgPath = runtimeRequire.resolve("tailwindcss/package.json")
+    const { version } = runtimeRequire(pkgPath) as { version: string }
     const major = Number.parseInt(version.split(".")[0], 10)
     return { version, major, supported: major >= 4, path: pkgPath }
   } catch {

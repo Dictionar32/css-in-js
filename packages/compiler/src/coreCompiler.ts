@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 
 import { TwError } from "@tailwind-styled/shared"
 import { type TransformOptions, type TransformResult } from "./astTransform"
+import { compileCssFromClasses } from "./cssCompiler"
 import { CompileContext, type CompileEngine, type CompileInput } from "./context"
 import { adaptNativeResult, type ComponentMetadata, getNativeBridge } from "./nativeBridge"
 import { Pipeline } from "./pipeline"
@@ -120,34 +121,26 @@ class CompilerCore {
   private runDeadStyleElimination(classes: string[]): string {
     if (classes.length === 0) return ""
     const uniqueClasses = Array.from(new Set(classes))
-    let filteredClasses = uniqueClasses
 
     const native = getNativeBridge()
-
-    if (native?.analyzeClassesNative) {
-      try {
-        const filesJson = JSON.stringify([{ file: "compiled", classes: uniqueClasses }])
-        const analysis = native.analyzeClassesNative(filesJson, process.cwd(), 0)
-
-        if (analysis?.safelist) {
-          const safelistSet = new Set(analysis.safelist)
-          filteredClasses = uniqueClasses.filter((cls) => safelistSet.has(cls))
-        }
-      } catch (err) {
-        console.debug("[deadStyleElimination] native analyze failed, skipping:", (err as Error).message ?? err)
-      }
+    if (!native?.analyzeClassesNative) {
+      throw new TwError(
+        "rust",
+        "NATIVE_ANALYZE_UNAVAILABLE",
+        "FATAL: Native binding 'analyzeClassesNative' is required for deadStyleElimination.\n" +
+        "This package requires native Rust bindings."
+      )
     }
+
+    const filesJson = JSON.stringify([{ file: "compiled", classes: uniqueClasses }])
+    const analysis = native.analyzeClassesNative(filesJson, process.cwd(), 0)
+    const safelist = analysis?.safelist ?? []
+    const safelistSet = new Set(safelist)
+    const filteredClasses = uniqueClasses.filter((cls) => safelistSet.has(cls))
 
     if (filteredClasses.length === 0) return ""
-
-    try {
-      const { compileCssFromClasses } = require("./cssCompiler") as typeof import("./cssCompiler")
-      const compiled = compileCssFromClasses(filteredClasses)
-      return compiled?.css ?? ""
-    } catch (err) {
-      console.debug("[deadStyleElimination] css compile failed, skipping:", (err as Error).message ?? err)
-      return ""
-    }
+    const compiled = compileCssFromClasses(filteredClasses)
+    return compiled?.css ?? ""
   }
 
   private nativeStep(ctx: CompileContextExtended): void {

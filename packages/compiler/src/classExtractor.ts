@@ -1,9 +1,6 @@
 /**
  * tailwind-styled-v4 — classExtractor
  *
- * FIX #02: Remove .slice(0, -1) workaround for broken TEMPLATE_RE.
- * TEMPLATE_RE trailing space is now fixed in twDetector.ts.
- *
  * Ekstrak semua Tailwind class dari source untuk safelist generation.
  */
 
@@ -12,16 +9,6 @@ import {
   parseClasses,
 } from "@tailwind-styled/syntax"
 import { parseComponentConfig } from "./astParser"
-import { EXTEND_RE, OBJECT_RE, TEMPLATE_RE } from "./twDetector"
-
-const _TEMPLATE_SCAN_RE = new RegExp(TEMPLATE_RE.source, "g")
-const _OBJECT_SCAN_RE = new RegExp(OBJECT_RE.source, "g")
-const _EXTEND_SCAN_RE = new RegExp(EXTEND_RE.source, "g")
-const _CLASS_NAME_RE = /className\s*=\s*["']([^"']+)["']/g
-
-function _resetRegex(regex: RegExp): void {
-  regex.lastIndex = 0
-}
 
 /**
  * Extract all Tailwind classes from source code.

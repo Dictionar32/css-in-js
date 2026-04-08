@@ -8,17 +8,16 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "tw-plugin": "./dist/cli.cjs"
+    "tw-plugin": "./dist/cli.js"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -26,8 +25,8 @@
     "registry.json"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/cli.ts --format cjs,esm --dts --out-dir dist --clean --external typescript",
-    "dev": "tsup src/index.ts src/cli.ts --format cjs,esm --dts --out-dir dist --watch --external typescript",
+    "build": "tsup src/index.ts src/cli.ts --format esm --dts --out-dir dist --clean --external typescript",
+    "dev": "tsup src/index.ts src/cli.ts --format esm --dts --out-dir dist --watch --external typescript",
     "check": "tsc --noEmit",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/plugin-registry"

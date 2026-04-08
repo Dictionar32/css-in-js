@@ -7,19 +7,18 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --out-dir dist --clean",
-    "dev": "tsup src/index.ts --format cjs,esm --out-dir dist --watch",
+    "build": "tsup src/index.ts --format esm --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format esm --out-dir dist --watch",
     "check": "tsc --noEmit",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/runtime"

@@ -130,9 +130,11 @@ function getRequire(): NodeRequire {
   try {
     return createRequire(import.meta.url)
   } catch {
-    // CJS context — require is already available as global
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require as NodeRequire
+    try {
+      return Function("return require")() as NodeRequire
+    } catch {
+      throw new Error("Unable to resolve Node require in current runtime context")
+    }
   }
 }
 
@@ -140,6 +142,18 @@ const _require = getRequire()
 
 function requireNativeModule(path: string): unknown {
   return _require(path)
+}
+
+export function createRuntimeRequire(importMetaUrl: string): NodeRequire {
+  try {
+    return createRequire(importMetaUrl)
+  } catch {
+    try {
+      return Function("return require")() as NodeRequire
+    } catch {
+      throw new Error("Unable to resolve Node require in current runtime context")
+    }
+  }
 }
 
 export interface ResolveCandidatesOptions {
@@ -181,11 +195,13 @@ export function resolveNativeBindingCandidates(options: ResolveCandidatesOptions
     }
   }
 
-  // Add explicit monorepo root native directory candidates
-  // Packages live at packages/<name>/dist, so we need to walk up to monorepo root
+  // Add explicit monorepo root native directory candidates.
+  // Runtime can be:
+  // - packages/<name>/dist  -> naik 3 tingkat ke root repo
+  // - packages/<name>/src   -> naik 4 tingkat ke root repo
   const defaultBindingName = "tailwind_styled_parser.node"
-  candidates.push(resolve(runtimeDir, "..", "..", "..", "native", defaultBindingName))
   candidates.push(resolve(runtimeDir, "..", "..", "..", "..", "native", defaultBindingName))
+  candidates.push(resolve(runtimeDir, "..", "..", "..", "native", defaultBindingName))
   candidates.push(resolve(process.cwd(), "native", defaultBindingName))
 
   return Array.from(new Set(candidates))

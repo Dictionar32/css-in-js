@@ -14,7 +14,7 @@
  * oxc-parser adalah native Node addon (napi-rs), tidak ada WASM overhead.
  */
 
-import { createRequire } from "node:module"
+import { parseSync } from "oxc-parser"
 
 export interface ParsedComponentConfig {
   base: string
@@ -80,25 +80,6 @@ const oxcWalkObject = (node: unknown): Record<string, unknown> => {
 }
 
 const parseWithOxc = (objectStr: string): ParsedComponentConfig => {
-  let parseSync: ((filename: string, source: string, options: { sourceType: string }) => { program: unknown; errors: unknown[] }) | null = null
-
-  try {
-    const _require = createRequire(import.meta.url)
-    parseSync = _require("oxc-parser").parseSync
-  } catch {
-    throw new Error(
-      "FATAL: oxc-parser is required but not available.\n" +
-      "This package requires native Rust bindings.\n\n" +
-      "Resolution steps:\n" +
-      "1. Install oxc-parser: npm install oxc-parser\n" +
-      "2. Or build native bindings: npm run build:rust"
-    )
-  }
-
-  if (!parseSync) {
-    throw new Error("FATAL: oxc-parser parseSync is not available.")
-  }
-
   const source = `const __c = ${objectStr}`
   const result = parseSync("config.ts", source, { sourceType: "script" })
   const errors = (result as { errors?: unknown[] }).errors

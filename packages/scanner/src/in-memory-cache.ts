@@ -56,10 +56,13 @@ const createCacheBindingLoader = () => {
         return (
           !!mod &&
           typeof mod.scanCacheGet === "function" &&
-          typeof mod.scanCachePut === "function"
+          typeof mod.scanCachePut === "function" &&
+          typeof mod.scanCacheInvalidate === "function" &&
+          typeof mod.scanCacheStats === "function"
         )
       },
-      invalidExportMessage: "native module does not expose scanCacheGet/scanCachePut",
+      invalidExportMessage:
+        "native module does not expose full cache API (scanCacheGet/scanCachePut/scanCacheInvalidate/scanCacheStats)",
     })
 
     if (loaded.binding) {

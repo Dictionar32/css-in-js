@@ -37,14 +37,13 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "./dist/plugin.cjs",
+  "main": "./dist/plugin.js",
   "module": "./dist/plugin.js",
   "types": "./dist/plugin.d.ts",
   "exports": {
     ".": {
       "types": "./dist/plugin.d.ts",
-      "import": "./dist/plugin.js",
-      "require": "./dist/plugin.cjs"
+      "import": "./dist/plugin.js"
     }
   },
   "files": [

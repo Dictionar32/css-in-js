@@ -17,6 +17,7 @@ export default defineConfig({
   format: ["esm"],
   dts: true,
   clean: true,
+  shims: true,
   target: "node20",
   platform: "node",
   noExternal: [
@@ -43,8 +44,5 @@ export default defineConfig({
   ],
   esbuildOptions(options) {
     options.external = [...(options.external ?? []), "*.node"]
-    options.banner = {
-      js: `import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);`
-    }
   },
 })

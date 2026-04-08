@@ -8,24 +8,21 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./plugins": {
       "types": "./dist/plugins.d.ts",
-      "import": "./dist/plugins.js",
-      "require": "./dist/plugins.cjs"
+      "import": "./dist/plugins.js"
     },
     "./presets": {
       "types": "./dist/presets.d.ts",
-      "import": "./dist/presets.js",
-      "require": "./dist/presets.cjs"
+      "import": "./dist/presets.js"
     }
   },
   "files": [

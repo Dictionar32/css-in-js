@@ -10,6 +10,7 @@ import {
   loadNativeBindingOrThrow,
   resolveNativeBindingCandidates,
 } from "./nativeBinding"
+import { resolveNativeBindingCandidates as resolveNativeBindingCandidatesFromIndex } from "./index"
 
 test("wrapUnknownError maps unknown domain to compile source", () => {
   const err = wrapUnknownError("custom-domain", "CUSTOM_FAIL", new Error("boom"))
@@ -69,4 +70,20 @@ test("resolveNativeBindingCandidates includes 3-level and 4-level monorepo fallb
   assert.ok(
     candidates.includes(path.resolve(runtimeDir, "..", "..", "..", "..", "native", bindingName))
   )
+})
+
+test("index resolver prioritizes 4-level fallback for src runtime paths", () => {
+  const runtimeDir = path.resolve("/repo", "packages", "scanner", "src")
+  const bindingName = "tailwind_styled_parser.node"
+  const candidates = resolveNativeBindingCandidatesFromIndex({
+    runtimeDir,
+    includeDefaultCandidates: true,
+  })
+
+  const up4 = path.resolve(runtimeDir, "..", "..", "..", "..", "native", bindingName)
+  const up3 = path.resolve(runtimeDir, "..", "..", "..", "native", bindingName)
+
+  assert.ok(candidates.includes(up4))
+  assert.ok(candidates.includes(up3))
+  assert.ok(candidates.indexOf(up4) < candidates.indexOf(up3))
 })

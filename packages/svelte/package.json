@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",
     "dev": "tsup src/index.ts --format esm --dts --watch",
-    "check": "tsc --noEmit",
+    "check": "node ../../node_modules/typescript/bin/tsc --noEmit",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/svelte"
   },
@@ -29,7 +29,7 @@
     "svelte": "^5.0.0",
     "tailwind-merge": "^3.5.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.0"
   },
   "keywords": [
     "tailwind",

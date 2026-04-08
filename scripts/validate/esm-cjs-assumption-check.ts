@@ -2,7 +2,7 @@
 
 import { execSync } from "node:child_process"
 
-const MAX_ALLOWED = Number(process.env.TWS_ESM_CJS_BASELINE ?? "3")
+const MAX_ALLOWED = Number(process.env.TWS_ESM_CJS_BASELINE ?? "0")
 const TARGET_DIRS = [
   "packages/analyzer",
   "packages/compiler",
@@ -17,6 +17,18 @@ function run(cmd: string): string {
   try {
     return execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status?: unknown }).status === 1 &&
+      "stdout" in error
+    ) {
+      const stdout = String((error as { stdout?: unknown }).stdout ?? "").trim()
+      if (stdout.length === 0) {
+        return ""
+      }
+    }
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Failed to run command: ${cmd}\n${message}`)
   }

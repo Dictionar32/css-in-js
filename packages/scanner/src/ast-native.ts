@@ -16,7 +16,7 @@ import {
 // ── Native binding ────────────────────────────────────────────────────────────
 
 interface NativeAstBinding {
-  astExtractClasses?: (
+  astExtractClasses: (
     source: string,
     filename: string
   ) => {
@@ -54,7 +54,7 @@ const createAstBindingLoader = () => {
       runtimeDir,
       candidates,
       isValid: (module: unknown): module is NativeAstBinding =>
-        !!module && typeof (module as Partial<NativeAstBinding>).astExtractClasses === "function",
+        !!module && typeof (module as NativeAstBinding).astExtractClasses === "function",
       invalidExportMessage: "native module does not expose astExtractClasses",
     })
 
@@ -91,7 +91,7 @@ export interface AstExtractResult {
   hasTwUsage: boolean
   hasUseClient: boolean
   imports: string[]
-  engine: "rust" | "oxc"
+  engine: "rust"
 }
 
 /**
@@ -102,14 +102,6 @@ export interface AstExtractResult {
  */
 export function astExtractClasses(source: string, filename: string): AstExtractResult {
   const binding = astBindingLoader.get()
-
-  if (!binding.astExtractClasses) {
-    throw new Error(
-      "FATAL: Native binding 'astExtractClasses' is required but not available.\n" +
-      "This package requires native Rust bindings."
-    )
-  }
-
   const r = binding.astExtractClasses(source, filename)
   return {
     classes: r.classes,

@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@tailwind-styled/shared": ["./packages/shared/src/index.ts"],
       "@tailwind-styled/compiler": ["./packages/compiler/src/index.ts"],

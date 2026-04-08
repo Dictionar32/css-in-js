@@ -1,25 +1,10 @@
 /**
  * tailwind-styled-v4 — twDetector
  *
- * Regex-based detector untuk semua syntax tw yang valid.
- * Dipakai sebelum transform — jika tidak ada tw usage, skip file.
- *
- * FIXED: trailing space bug di TEMPLATE_RE (#02)
+ * Native-only detector utilities.
  */
 
 import { getNativeBridge } from "./nativeBridge"
-
-/** tw.div`...` — FIX: removed trailing space before /g */
-export const TEMPLATE_RE = /\btw\.(server\.)?(\w+)`((?:[^`\\]|\\.)*)`/g
-
-/** tw.div({ base: "...", variants: {...} }) */
-export const OBJECT_RE = /\btw\.(server\.)?(\w+)\(\s*(\{[\s\S]*?\})\s*\)/g
-
-/** tw(Component)`...` */
-export const WRAP_RE = /\btw\((\w+)\)`((?:[^`\\]|\\.)*)`/g
-
-/** Card.extend`...` */
-export const EXTEND_RE = /(\w+)\.extend`((?:[^`\\]|\\.)*)`/g
 
 /** Transform already-applied marker — idempotency guard (#08) */
 export const TRANSFORM_MARKER = "/* @tw-transformed */"

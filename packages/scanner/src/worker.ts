@@ -1,11 +1,11 @@
 import { parentPort, workerData } from "node:worker_threads"
 
-import { scanWorkspace } from "./index"
+import { scanWorkspace } from "./index.ts"
 import {
   parseScannerWorkerRequest,
   parseScanWorkspaceResult,
   type ScanWorkspaceResult,
-} from "./schemas"
+} from "./schemas.ts"
 
 const workerPort = parentPort
 const data = parseScannerWorkerRequest(workerData)

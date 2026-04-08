@@ -3,13 +3,12 @@ import path from "node:path"
 import { Worker } from "node:worker_threads"
 import {
   createLogger,
-  getNativeDisableEnvVar,
   loadNativeBinding,
   resolveNativeBindingCandidates,
   resolveRuntimeDir,
 } from "@tailwind-styled/shared"
-import { filePriority, type NativeCacheEntry, readCache, writeCache } from "./cache-native"
-import { hashContentNative, isRustCacheAvailable } from "./native-bridge"
+import { filePriority, type NativeCacheEntry, readCache, writeCache } from "./cache-native.ts"
+import { hashContentNative, isRustCacheAvailable, scanWorkspaceNative } from "./native-bridge.ts"
 import {
   parseScannerWorkerMessage,
   parseScanWorkspaceOptions,
@@ -17,16 +16,13 @@ import {
   type ScanFileResult,
   type ScanWorkspaceOptions,
   type ScanWorkspaceResult,
-} from "./schemas"
+} from "./schemas.ts"
 
 const log = createLogger("scanner")
 
 const SCAN_WORKER_TIMEOUT_MS = 120_000
 
-type NativeParsedClass = { raw?: string }
 type NativeParserBinding = {
-  parse_classes?: (input: string) => NativeParsedClass[]
-  parseClasses?: (input: string) => NativeParsedClass[]
   extractClassesFromSource?: (source: string) => string[] | null
   batchExtractClassesNative?: (filePaths: string[]) => Array<{
     file: string; classes: string[]; contentHash: string; ok: boolean; error?: string
@@ -53,13 +49,6 @@ const createNativeParserLoader = () => {
 
   const loadNativeParserBinding = (): NativeParserBinding | null => {
     if (_state.binding !== undefined) return _state.binding
-    const disabledByEnv = getNativeDisableEnvVar()
-    if (disabledByEnv) {
-      _state.binding = null
-      _state.initError = `native parser disabled by ${disabledByEnv}`
-      debugNative(_state.initError)
-      return _state.binding
-    }
 
     const runtimeDir = getRuntimeDir()
     const candidates = resolveNativeBindingCandidates({
@@ -78,11 +67,9 @@ const createNativeParserLoader = () => {
       isValid: (required): required is NativeParserBinding =>
         !!required &&
         (typeof required === "object" || typeof required === "function") &&
-        (typeof (required as NativeParserBinding).extractClassesFromSource === "function" ||
-          typeof (required as NativeParserBinding).parseClasses === "function" ||
-          typeof (required as NativeParserBinding).parse_classes === "function"),
+        typeof (required as NativeParserBinding).extractClassesFromSource === "function",
       invalidExportMessage:
-        "Module loaded but missing expected parser functions (extractClassesFromSource/parseClasses/parse_classes)",
+        "Module loaded but missing expected parser function (extractClassesFromSource)",
     })
 
     if (binding) {
@@ -109,31 +96,12 @@ const createNativeParserLoader = () => {
 
 const nativeParserLoader = createNativeParserLoader()
 
-function normalizeWithNativeParser(tokens: string[]): string[] {
-  const binding = nativeParserLoader.get()
-  const parseClasses = binding?.parseClasses ?? binding?.parse_classes
-  if (!binding || typeof parseClasses !== "function") {
-    throw new Error(
-      "Native parser binding is required but not available. Run 'npm run build:rust' to build it."
-    )
-  }
-
-  try {
-    const parsed = parseClasses(tokens.join(" "))
-    const normalized = parsed.map((item) => item.raw?.trim() ?? "").filter(Boolean)
-    return Array.from(new Set(normalized))
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    throw new Error(`Native parser failed: ${errorMessage}. Run 'npm run build:rust' to rebuild.`)
-  }
-}
-
-export type { ScanFileResult, ScanWorkspaceOptions, ScanWorkspaceResult } from "./schemas"
+export type { ScanFileResult, ScanWorkspaceOptions, ScanWorkspaceResult } from "./schemas.ts"
 export {
   parseScannerWorkerMessage,
   parseScanWorkspaceOptions,
   parseScanWorkspaceResult,
-} from "./schemas"
+} from "./schemas.ts"
 
 export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"]
 export const DEFAULT_IGNORES = ["node_modules", ".git", ".next", "dist", "out", ".turbo", ".cache"]
@@ -308,9 +276,6 @@ export function scanWorkspace(
     for (const cls of result.classes) unique.add(cls)
   }
 
-  
-  const { scanWorkspaceNative } = require("./native-bridge")
-
   if (!normalizedOptions.cacheDir && !useCache) {
     const nativeResult = scanWorkspaceNative(rootDir, includeExtensions)
     if (nativeResult) {
@@ -471,11 +436,9 @@ export async function scanWorkspaceAsync(
   try {
     return await scanWorkspaceInWorker(rootDir, normalizedOptions)
   } catch (error) {
-    log.debug(
-      `worker scan failed, falling back to sync scanner: ${
-        error instanceof Error ? error.message : String(error)
-      }`
+    throw new Error(
+      `scanner worker failed: ${error instanceof Error ? error.message : String(error)}\n` +
+      "Set TWS_DISABLE_SCANNER_WORKER=1 to run synchronous scanner mode explicitly."
     )
-    return scanWorkspace(rootDir, normalizedOptions)
   }
 }

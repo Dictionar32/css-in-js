@@ -6,7 +6,7 @@
  */
 
 import path from "node:path"
-import { cachePriorityNative, cacheReadNative, cacheWriteNative } from "./native-bridge"
+import { cachePriorityNative, cacheReadNative, cacheWriteNative } from "./native-bridge.ts"
 
 function defaultCachePath(rootDir: string, cacheDir?: string): string {
   const dir = cacheDir

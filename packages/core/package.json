@@ -9,60 +9,50 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./next": {
       "types": "./dist/next.d.ts",
-      "import": "./dist/next.js",
-      "require": "./dist/next.cjs"
+      "import": "./dist/next.js"
     },
     "./vite": {
       "types": "./dist/vite.d.ts",
-      "import": "./dist/vite.js",
-      "require": "./dist/vite.cjs"
+      "import": "./dist/vite.js"
     },
     "./compiler": {
       "types": "./dist/compiler.d.ts",
-      "import": "./dist/compiler.js",
-      "require": "./dist/compiler.cjs"
+      "import": "./dist/compiler.js"
     },
     "./preset": {
       "types": "./dist/preset.d.ts",
-      "import": "./dist/preset.js",
-      "require": "./dist/preset.cjs"
+      "import": "./dist/preset.js"
     },
     "./css": {
       "types": "./dist/css.d.ts",
-      "import": "./dist/css.js",
-      "require": "./dist/css.cjs"
+      "import": "./dist/css.js"
     },
     "./plugins": {
       "types": "./dist/plugins.d.ts",
-      "import": "./dist/plugins.js",
-      "require": "./dist/plugins.cjs"
+      "import": "./dist/plugins.js"
     },
     "./devtools": {
       "types": "./dist/devtools.d.ts",
-      "import": "./dist/devtools.js",
-      "require": "./dist/devtools.cjs"
+      "import": "./dist/devtools.js"
     },
     "./animate": {
       "types": "./dist/animate.d.ts",
-      "import": "./dist/animate.js",
-      "require": "./dist/animate.cjs"
+      "import": "./dist/animate.js"
     },
     "./theme": {
       "types": "./dist/theme.d.ts",
-      "import": "./dist/theme.js",
-      "require": "./dist/theme.cjs"
+      "import": "./dist/theme.js"
     },
     "./package.json": "./package.json"
   },

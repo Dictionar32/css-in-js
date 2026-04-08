@@ -3,17 +3,10 @@
  */
 
 import fs from "node:fs"
-import { createRequire } from "node:module"
 import path from "node:path"
+import { createRuntimeRequire } from "@tailwind-styled/shared"
 
-const _require = (() => {
-  try {
-    return createRequire(import.meta.url)
-  } catch {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require as NodeRequire
-  }
-})()
+const _require = createRuntimeRequire(import.meta.url)
 
 export type TailwindConfig = Record<string, unknown>
 

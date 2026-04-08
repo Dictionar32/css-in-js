@@ -7,6 +7,7 @@
 
 import fs from "node:fs"
 import path from "node:path"
+import { compileCssFromClasses } from "./cssCompiler"
 import { getAllRoutes, getRouteClasses } from "./routeCssCollector"
 
 export type TailwindEngineMode = "jit" | "build" | "manual"
@@ -16,6 +17,7 @@ export interface TailwindEngineOptions {
   cwd?: string
   outputDir?: string
   config?: Record<string, unknown>
+  /** Deprecated in native-only mode: CSS output is produced by native compiler. */
   minify?: boolean
 }
 
@@ -31,7 +33,6 @@ export const generateCssForClasses = async (
   _config?: Record<string, unknown>,
   _cwd = process.cwd()
 ): Promise<string> => {
-  const { compileCssFromClasses } = require("./cssCompiler") as typeof import("./cssCompiler")
   const result = compileCssFromClasses(classes)
   if (!result?.css || result.resolvedClasses.length === 0) {
     throw new Error(
@@ -46,7 +47,7 @@ export const generateCssForClasses = async (
 export const generateAllRouteCss = async (
   opts: TailwindEngineOptions = {}
 ): Promise<CssGenerateResult[]> => {
-  const { cwd = process.cwd(), outputDir, minify = true } = opts
+  const { cwd = process.cwd(), outputDir } = opts
 
   const results: CssGenerateResult[] = []
   const routes = getAllRoutes()
@@ -55,8 +56,7 @@ export const generateAllRouteCss = async (
     const classes = Array.from(getRouteClasses(route))
     if (classes.length === 0) continue
 
-    const rawCss = await generateCssForClasses(classes, undefined, cwd)
-    const css = minify ? minifyCss(rawCss) : rawCss
+    const css = await generateCssForClasses(classes, undefined, cwd)
 
     results.push({
       route,
@@ -89,17 +89,6 @@ const routeToFilename = (route: string): string => {
   if (route === "/") return "index.css"
   if (route === "__global") return "_global.css"
   return `${route.replace(/^\//, "").replace(/\//g, "_")}.css`
-}
-
-const minifyCss = (css: string): string => {
-  return css
-    .replace(/\/\*[^*]*\*+([^/*][^*]*\*+)*\//g, "")
-    .replace(/\s+/g, " ")
-    .replace(/\s*{\s*/g, "{")
-    .replace(/\s*}\s*/g, "}")
-    .replace(/\s*:\s*/g, ":")
-    .replace(/\s*;\s*/g, ";")
-    .trim()
 }
 
 const formatBytes = (bytes: number): string => {

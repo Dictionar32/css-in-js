@@ -4,6 +4,7 @@
     "rootDir": "src",
     "allowJs": true,
     "checkJs": false,
+    "types": ["node"],
     "outDir": "dist"
   },
   "include": ["src"]
