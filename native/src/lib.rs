@@ -55,6 +55,16 @@ mod thread_pool {
             .expect("Failed to create thread pool")
     });
 }
+// ============================================
+// INTEGRASI LIGHTNING CSS & TAILWIND
+// ============================================
+
+mod lightning;
+mod tailwind;
+mod integrations;
+
+// Re-export semua fungsi N-API dari integrasi
+pub use integrations::exports::*;
 
 // ─── Lazy-compiled regexes (compiled once at first use, reused across calls) ──
 static RE_TOKEN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\S+").unwrap());
