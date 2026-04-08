@@ -1,3 +1,26 @@
+## Status Update 2026-04-07
+
+> Snapshot terbaru: lihat `docs/master-list-unimplemented-2026-04-07.md` untuk status definitif.
+
+**Yang sudah stabil (Wave 1-4B + ESM + Monorepo facade):**
+- Wave 1: Rust schema export foundation -- `export-schemas` binary + `native/json-schemas/` + gate `npm run wave1:gate`
+- Wave 2A: Consumer/Export Readiness -- dual-mode `import`/`require` gate aktif
+- Wave 2B: Schema Consolidation -- **BELUM STABIL** (77 Zod schema tersebar, 4/6 consumer belum migrate)
+- Wave 3: Error Unification -- `TwError` tersentralisasi, lintas package sudah typed
+- Wave 4A: Schema Drift Gate -- CI gate aktif
+- Wave 4B: Auto-Sync Completion -- napi-rs v3, `.d.ts` auto-generated baseline
+- ESM Migration: Wave 1-3 clear, ESM-only gated
+- Monorepo Checklist: facade smoke gate + artifact assertions aktif
+
+**Backlog aktif (belum selesai):**
+- Wave 2B Schema Consolidation
+- Sprint A: LSP #12 + Studio TS migration + TwError baseline
+- Sprint B: Rust schema export + auto-sync CI + napi-rs v3 prep
+- Sprint C: Oxc uplift + facade stabilization + remove JS fallback wave-1
+- Sprint D: test-all-packages + plugin registry Track B + operasional labels/PIC
+
+---
+
 ## Approved V2 Direction
 
 ### Status

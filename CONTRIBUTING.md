@@ -12,7 +12,7 @@ npm run build:packages
 Opsional untuk validasi penuh monorepo:
 
 ```bash
-npm run validate:final
+npm run validate
 ```
 
 ## 2) Struktur project (ringkas)
@@ -26,6 +26,38 @@ npm run validate:final
 - `packages/cli` — command line tools.
 - `native/` — scaffold native parser (N-API / Rust).
 - `examples/` — contoh implementasi.
+
+## 2b) Packages yang tidak membutuhkan Rust
+
+15 package di bawah ini adalah **100% TypeScript/JavaScript** — tidak perlu build `native/` atau install Rust untuk berkontribusi:
+
+| Package | Deskripsi |
+|---|---|
+| `packages/animate` | Animation DSL — compile keyframes & animation CSS |
+| `packages/atomic` | Atomic CSS generator |
+| `packages/dashboard` | HTTP metrics server |
+| `packages/devtools` | Visual debug overlay (React component) |
+| `packages/plugin` | Plugin system & registry runtime |
+| `packages/plugin-api` | Plugin contracts & Zod schemas |
+| `packages/plugin-registry` | Plugin discovery & install CLI |
+| `packages/preset` | Default design tokens |
+| `packages/runtime` | Runtime helpers untuk sub-components |
+| `packages/runtime-css` | Batched CSS injector (RAF-based) |
+| `packages/storybook-addon` | Storybook decorator & argTypes |
+| `packages/svelte` | Svelte 4/5 adapter |
+| `packages/testing` | Jest/Vitest custom matchers |
+| `packages/theme` | Multi-theme engine & live token |
+| `packages/vue` | Vue 3 adapter |
+
+Untuk package-package ini, setup cukup:
+
+```bash
+npm install
+npm run build -w packages/<nama-package>
+npm run test -w packages/<nama-package>
+```
+
+Tidak perlu `cargo`, `rustup`, atau native binary.
 
 ## 3) Workflow kontribusi
 
@@ -112,9 +144,9 @@ npm run bench:massive -- --root=test/fixtures/large-project --out=artifacts/scal
 3. Jalankan validasi:
 
 ```bash
-npm run validate:final
+npm run validate
 npm run validate:deps
-npm run validate:pr5:gaps
+npm run stability:cross-package
 ```
 
 4. Jalankan benchmark/regression yang diperlukan:
@@ -158,3 +190,11 @@ npm run build -w @tailwind-styled/plugin-registry
 # Jalankan SLO benchmark (100 runs, target p95 < 500ms)
 node packages/plugin-registry/benchmark/index.mjs
 ```
+
+## 11) Menjalankan benchmark regresi
+```bash
+# Jalankan regresi parser Rust
+node scripts/regression/rust-parser.js
+
+# Jalankan regresi parser JS
+node scripts/regression/js-parser.js

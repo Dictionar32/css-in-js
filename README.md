@@ -414,7 +414,7 @@ PR dan issue sangat welcome! Baca [CONTRIBUTING.md](CONTRIBUTING.md) untuk pandu
 
 Prioritas saat ini:
 - [ ] macOS & Windows pre-built binary
-- [ ] Docs website
+- [ ] Docs website (VitePress site — `apps/docs/` sudah ada struktur awal)
 
 ---
 
@@ -530,3 +530,17 @@ expect(metrics).toHaveEngineMetrics({ minFiles: 5 })
 | `TWS_DEBUG_SCANNER` | `0` | `1` = aktifkan scanner debug logs |
 | `STUDIO_PORT` | `3030` | Port studio server |
 | `STUDIO_VERBOSE` | tidak ada | Tampilkan stdout/stderr studio server |
+
+### 📦 Publishing
+
+```bash
+# Bump version
+npm version patch -w @tailwind-styled/core
+
+# Publish ke npm
+npm publish -w @tailwind-styled/core
+```
+
+### 📜 License
+
+MIT License — lihat [LICENSE](LICENSE) untuk detail.

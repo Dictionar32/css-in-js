@@ -67,3 +67,63 @@ git checkout src/      # rollback seluruh folder src
 # atau per file:
 git checkout src/components/Button.tsx
 ```
+
+---
+
+## Migrasi v4.x → v5.0
+
+### Breaking Changes
+
+| Perubahan | v4.x | v5.0 |
+|---|---|---|
+| Native binding | Opsional (JS fallback) | **Wajib** |
+| Import path | `tailwind-styled-v4/next` | `@tailwind-styled/next` |
+| `TWS_NO_NATIVE` | Disable native | Deprecated (segera dihapus) |
+| `validate:final` script | Ada | Diganti `validate` |
+| Tipe `CvFn` | `any` | `CvFn<C>` (generic) |
+
+### Langkah Migrasi v4 → v5
+
+1. **Build native binary:**
+   ```bash
+   cd native && cargo build --release
+   cp target/release/tailwind_styled_parser.node .
+   ```
+
+2. **Update import paths** (jika pakai subpath imports):
+   ```ts
+   // Sebelum
+   import { withTailwindStyled } from "tailwind-styled-v4/next"
+   
+   // Sesudah
+   import { withTailwindStyled } from "@tailwind-styled/next"
+   ```
+
+3. **Update npm scripts** jika ada di CI:
+   ```bash
+   # Sebelum
+   npm run validate:final
+   
+   # Sesudah
+   npm run validate
+   ```
+
+4. **Hapus `TWS_NO_NATIVE=1`** dari environment jika ada — tidak lagi berpengaruh
+
+5. **Update TypeScript types** jika ada penggunaan `CvFn` atau `TwComponentFactory`:
+   ```ts
+   // Sebelum (tipe lebar)
+   const fn: CvFn = ...
+   
+   // Sesudah (generic typed)
+   const fn: CvFn<typeof myConfig> = ...
+   ```
+
+### Verifikasi Migrasi
+
+```bash
+npm run validate
+npm run stability:cross-package
+```
+
+Jika semua hijau, migrasi berhasil.

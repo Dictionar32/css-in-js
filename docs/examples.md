@@ -138,3 +138,121 @@ export const Default = {}
 export const Danger = { args: { intent: "danger" } }
 export const Large  = { args: { size: "lg" } }
 ```
+
+## 9) Theme Engine
+
+```ts
+import {
+  defineThemeContract,
+  createTheme,
+  liveToken,
+  setToken,
+  tokenVar,
+} from "@tailwind-styled/theme"
+
+// Definisi kontrak
+const contract = defineThemeContract({
+  colors: { bg: "", fg: "", primary: "", muted: "" },
+})
+
+// Buat dua tema
+const lightTheme = createTheme(contract, "light", {
+  colors: { bg: "#ffffff", fg: "#09090b", primary: "#3b82f6", muted: "#71717a" },
+})
+const darkTheme = createTheme(contract, "dark", {
+  colors: { bg: "#09090b", fg: "#fafafa", primary: "#60a5fa", muted: "#a1a1aa" },
+})
+
+// Pakai di komponen
+const Card = tw.div`bg-[var(--colors-bg)] text-[var(--colors-fg)] p-6 rounded-xl`
+
+// Switch tema
+document.documentElement.setAttribute("data-theme", "dark")
+```
+
+## 10) Live Token Engine
+
+```ts
+import { liveToken, setToken, subscribeTokens, tokenVar } from "@tailwind-styled/theme"
+
+// Buat token set — auto-generate CSS variables
+const tokens = liveToken({
+  primary: "#3b82f6",
+  radius: "0.5rem",
+})
+// → --tw-primary: #3b82f6; --tw-radius: 0.5rem;
+
+// Pakai di komponen
+const Button = tw.button`
+  bg-[${tokenVar("primary")}] text-white
+  rounded-[${tokenVar("radius")}]
+  px-4 py-2
+`
+
+// Update di runtime — instan tanpa reload
+setToken("primary", "#ef4444")
+
+// Subscribe perubahan
+subscribeTokens((changed) => {
+  console.log("Token berubah:", changed)
+})
+```
+
+## 11) Plugin Kustom
+
+```ts
+import { use, type TwPlugin } from "@tailwind-styled/plugin"
+
+const brandPlugin: TwPlugin = {
+  name: "brand-plugin",
+  version: "1.0.0",
+  setup(ctx) {
+    // Tambah variant kustom
+    ctx.addVariant("hocus", "&:hover, &:focus")
+
+    // Tambah utility kustom
+    ctx.addUtility("text-balance", { textWrap: "balance" })
+
+    // Tambah design token
+    ctx.addToken("brand", "#ff6b6b")
+
+    // Hook CSS — tambahkan comment setelah generate
+    ctx.onGenerateCSS((css) => css + "\n/* built with brand-plugin */")
+  },
+}
+
+use(brandPlugin)
+
+// Sekarang bisa pakai di komponen
+const Title = tw.h1`hocus:text-[var(--tw-brand)] text-balance text-2xl font-bold`
+```
+
+## 12) Engine Programmatic API
+
+```ts
+import { createEngine } from "@tailwind-styled/engine"
+
+const engine = await createEngine({
+  root: process.cwd(),
+  plugins: [
+    {
+      name: "logger",
+      afterBuild(result) {
+        console.log(`Built: ${result.uniqueClasses.length} classes, ${result.cssLength} bytes`)
+      },
+    },
+  ],
+})
+
+// Scan + build
+const scanResult = await engine.scan()
+const buildResult = await engine.build()
+console.log(buildResult.css)
+
+// Watch mode
+await engine.watch({
+  onChange(event) {
+    console.log("Rebuilt:", event.result.cssLength, "bytes in", event.result.buildTimeMs, "ms")
+  },
+})
+```

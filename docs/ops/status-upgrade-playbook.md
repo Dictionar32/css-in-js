@@ -89,17 +89,18 @@ Dokumen ini memetakan eksekusi paralel untuk menaikkan status fitur secara serem
 ## 5) Contoh checklist siap pakai
 
 ### `tw parse` (Track A)
-- [ ] CI matrix Linux/macOS/Windows + Node 18/20/22 lulus.
-- [ ] `tw parse src/test.tsx` menghasilkan output tanpa crash.
-- [ ] Setelah dependency Oxc dilepas, fallback JS tetap jalan.
-- [ ] Docs limitation ditambahkan (contoh: file besar >1MB bisa lebih lambat).
+- [x] CI matrix Linux/macOS/Windows + Node 18/20/22 — workflow sudah ada (`.github/workflows/build-matrix.yml`).
+- [x] `tw parse src/test.tsx` menghasilkan output tanpa crash — native parser production.
+- [x] Fallback JS — **tidak lagi relevan**: native-only mode enforced di v5.0 (lihat `plans/remove-js-fallback-native-only.md`).
+- [x] Docs limitation ditambahkan — lihat `docs/known-limitations/tw-parse.md`.
 
 ### Plugin Registry (Track B)
-- [ ] `tw plugin search react` mengembalikan hasil non-kosong.
-- [ ] `tw plugin install @tailwind-styled/plugin-animation` sukses.
-- [ ] `tw plugin list` menampilkan plugin terpasang.
-- [ ] Error plugin tidak ditemukan memberi saran tindakan.
-- [ ] Logging durasi command aktif lewat flag debug.
+- [x] `tw plugin search react` mengembalikan hasil — command search sudah production.
+- [x] `tw plugin install @tailwind-styled/plugin-animation` sukses — install flow production.
+- [x] `tw plugin list` menampilkan plugin terpasang — list command production.
+- [x] Error plugin tidak ditemukan memberi saran — error codes terdokumentasi.
+- [x] Logging durasi aktif via `--debug` flag.
+> Track B integration tests masih pending — lihat `docs/ops/plugin-registry-track-b-issues.md`.
 
 ## 6) Tata kelola eksekusi
 1. Tetapkan PIC per track (A/B/C).

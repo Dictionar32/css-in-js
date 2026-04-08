@@ -252,3 +252,114 @@ Runtime (Server Component):
 | Zero-config setup          | ❌                | ❌          | ❌        | **✅**            |
 | tw.div API                 | ❌                | ✅          | ❌        | **✅**            |
 | Tailwind intellisense      | ❌                | ✅          | ✅        | **✅**            |
+
+---
+
+## Native Engine (Rust)
+
+Sejak v5.0, komponen kritis pipeline dijalankan via **Rust engine** di `native/` — dikompilasi sebagai `.node` addon via NAPI-RS.
+
+```
+packages/scanner     →  scan_workspace()        (Rayon parallel, ~425× lebih cepat)
+packages/compiler    →  compile_css()           (atomic CSS, CSS variable resolution)
+packages/analyzer    →  analyze_classes()       (class usage, frequency analysis)
+packages/engine      →  compute_incremental_diff() / process_file_change()
+packages/animate     →  compile_animation() / compile_keyframes()
+packages/theme       →  compile_theme() / extract_css_vars()
+```
+
+### Dependency Graph (Native → JS)
+
+```
+native/ (Rust binary)
+    └── @tailwind-styled/shared (nativeBinding.ts)
+            └── consumer packages (scanner, compiler, engine, ...)
+```
+
+Semua akses ke native binding melalui satu titik:
+
+```ts
+import { loadNativeBinding } from "@tailwind-styled/shared"
+const native = await loadNativeBinding()
+```
+
+### Fallback Strategy
+
+- Jika binary tidak tersedia: throw `TwError` — tidak ada silent fallback di v5.0
+- Environment variable `TWS_NO_NATIVE=1` sedang dalam proses penghapusan (lihat `plans/remove-js-fallback-native-only.md`)
+- Pre-built binary Linux x64 disertakan di repo — macOS/Windows harus build dari source
+
+### Build Native dari Source
+
+```bash
+cd native
+cargo build --release
+# Output: native/target/release/tailwind_styled_parser.node
+# Copy ke: native/tailwind_styled_parser.node
+```
+
+### Schema Auto-Sync (Wave 1/4)
+
+Rust struct dengan `#[derive(JsonSchema)]` otomatis generate JSON schema:
+
+```bash
+# Generate schema dari Rust struct
+npm run wave1:export-schemas
+
+# Generate TypeScript types dari schema
+npm run schemas:generate
+
+# Verifikasi tidak ada drift
+npm run wave4:schema-drift
+```
+
+Output: `packages/shared/src/generated/rust-schema-types.d.ts`
+
+---
+
+## Package Dependency Map
+
+```
+tailwind-styled-v4 (root)
+├── core          ← standalone, peer: react
+├── shared        ← utility, peer: none
+├── native        ← Rust binary
+│
+├── syntax        → shared, native
+├── scanner       → shared, native
+├── analyzer      → shared, native, scanner
+├── compiler      → shared, native, syntax, plugin-api
+├── engine        → shared, native, scanner, compiler, analyzer
+│
+├── animate       → shared, native
+├── theme         → shared, native, runtime-css
+├── runtime       → theme
+├── runtime-css   ← standalone (client-only)
+│
+├── plugin-api    → shared
+├── plugin        → plugin-api, shared
+├── plugin-registry → plugin-api, shared
+│
+├── preset        ← standalone
+├── atomic        ← standalone
+├── syntax        → shared, native
+│
+├── next          → compiler, engine, scanner (bundled inline)
+├── vite          → compiler, engine, scanner (bundled inline)
+├── rspack        → compiler (bundled inline)
+│
+├── cli           → engine, scanner, analyzer, compiler, plugin-registry
+├── dashboard     ← standalone (HTTP server)
+├── devtools      → shared (React component)
+│
+├── testing       ← standalone (test matchers)
+├── storybook-addon ← standalone
+│
+├── vue           → tailwind-merge (peer)
+├── svelte        → tailwind-merge (peer)
+│
+├── vscode        → shared, scanner (LSP providers)
+└── studio-desktop → engine (Electron app)
+```
+
+> Catatan: adapter next/vite/rspack mem-bundle compiler/engine/scanner secara inline — user tidak perlu install terpisah.

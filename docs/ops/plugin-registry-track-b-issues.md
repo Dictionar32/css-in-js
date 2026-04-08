@@ -1,4 +1,11 @@
-# Plugin Registry (Track B) — Issue Templates Siap Salin
+# Plugin Registry (Track B) -- Issue Templates
+
+> **Status 2026-04-07**: Issue templates sudah dibuat. Tidak satu pun dikerjakan.
+> Ini adalah backlog aktif -- lihat `docs/master-list-unimplemented-2026-04-07.md` section G.
+> 
+> Track B scope: integration tests, SLO benchmark, security hardening, `--allowlist` flag, docs finalisasi.
+
+---
 
 Dokumen ini berisi template issue markdown berdasarkan rencana 7 issue berurutan untuk menaikkan `packages/plugin-registry` dari **Buildable** ke **Production-ready**.
 

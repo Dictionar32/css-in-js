@@ -6,7 +6,15 @@
 npm install tailwind-styled-v4
 ```
 
-**Itu saja.** Tidak perlu install tailwindcss, postcss, atau setup apapun.
+**Native binary sudah disertakan** untuk Linux x64 — tidak perlu build manual.
+
+Untuk macOS atau Windows, build dari source:
+```bash
+cd node_modules/tailwind-styled-v4/native
+cargo build --release
+```
+
+> Prasyarat: Rust 1.75+ dan Node.js 20+. Cek via `rustc --version` dan `node --version`.
 
 ---
 
