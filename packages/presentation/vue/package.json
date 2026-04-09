@@ -7,7 +7,7 @@
   "engines": {
     "node": ">=20"
   },
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -15,25 +15,24 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "files": ["dist", "README.md"],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts --format esm --dts --watch",
-    "check": "node ../../node_modules/typescript/bin/tsc --noEmit",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/vue"
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format esm --dts --out-dir dist --watch",
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "peerDependencies": {
-    "tailwind-merge": ">=3.5.0",
     "vue": ">=3.3.0"
   },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "tailwind-merge": "^3.5.0",
-    "tsup": "^8.0.0",
-    "typescript": "^6.0.0",
+    "tsup": "^8",
+    "typescript": "^6",
     "vue": "^3.4.0"
   },
   "keywords": [
@@ -44,15 +43,5 @@
     "variants",
     "css"
   ],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-org/tailwind-styled-v4"
-  },
-  "dependencies": {
-    "@tailwind-styled/shared": "^5.0.4",
-    "inversify": "^8.1.0",
-    "reflect-metadata": "^0.2.2",
-    "zod": "^4.3.6"
-  }
+  "license": "MIT"
 }

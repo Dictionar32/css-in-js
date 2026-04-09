@@ -9,7 +9,6 @@
     "node": ">=20"
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -17,24 +16,16 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
-  "dependencies": {
-    "zod": "^4.3.6"
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format esm --dts --out-dir dist --watch",
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "tsx": "^4.21.0",
     "tsup": "^8",
     "typescript": "^6"
-  },
-  "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
-    "build:dev": "tsup src/index.ts --format esm --dts --out-dir dist --clean --sourcemap --watch",
-    "build:release": "tsup src/index.ts --format esm --dts --out-dir dist --clean --no-sourcemap",
-    "check": "tsc --noEmit -p tsconfig.json",
-    "test": "tsx --test src/errors.test.ts",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   }
 }

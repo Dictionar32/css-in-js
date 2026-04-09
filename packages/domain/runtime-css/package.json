@@ -1,57 +1,44 @@
 {
   "name": "@tailwind-styled/runtime-css",
   "version": "5.0.4",
-  "description": "RSC-aware CSS injector for tailwind-styled-v5 \u2014 streaming-friendly, zero client JS",
+  "description": "RSC-aware CSS injector for tailwind-styled-v5 — streaming-friendly, zero client JS",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "engines": {
     "node": ">=20"
   },
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/CssInjector.d.ts",
-      "import": "./dist/CssInjector.js"
-    },
-    "./client": {
-      "types": "./dist/batchedInjector.d.ts",
-      "import": "./dist/batchedInjector.js"
-    },
-    "./server": {
-      "types": "./dist/CssInjector.d.ts",
-      "import": "./dist/CssInjector.js"
-    },
-    "./batched": {
-      "types": "./dist/batchedInjector.d.ts",
-      "import": "./dist/batchedInjector.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "build:dts": "tsup --dts",
-    "dev": "tsup --watch",
-    "check": "tsc --noEmit",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/runtime-css"
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format esm --dts --out-dir dist --watch",
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "tsup": "^8",
     "typescript": "^6"
-  },
-  "dependencies": {
-    "inversify": "^8.1.0",
-    "reflect-metadata": "^0.2.2",
-    "zod": "^4.3.6"
   }
 }

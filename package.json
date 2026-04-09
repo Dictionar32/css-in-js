@@ -1,58 +1,25 @@
 {
   "name": "tailwind-styled-v4",
   "version": "5.0.4",
+  "description": "⚡ Rust-powered Tailwind CSS library for React. Zero runtime, RSC-aware, full TypeScript & Zod support.",
+  "author": "Dictionar32",
+  "license": "MIT",
+  "private": false,
   "packageManager": "npm@11.11.1",
   "engines": {
     "node": ">=20"
-  },
-  "description": "PRO Engine: styled-components + Tailwind CSS v4, zero-runtime compile, variant system, responsive props, plugin ecosystem",
-  "author": "Dictionar32",
-  "license": "MIT",
-  "bin": {
-    "tw": "dist/tw.js"
-  },
-  "keywords": [
-    "tailwind",
-    "tailwindcss",
-    "styled-components",
-    "css-in-js",
-    "variants",
-    "cva",
-    "stitches",
-    "panda-css",
-    "twin.macro",
-    "react",
-    "next.js",
-    "vite",
-    "zero-runtime",
-    "typescript",
-    "shadcn",
-    "radix",
-    "headless-ui"
-  ],
-  "homepage": "https://github.com/Dictionar32/tailwind-styled-v4",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Dictionar32/tailwind-styled-v4.git"
   },
   "workspaces": [
     "packages/domain/*",
     "packages/infrastructure/*",
     "packages/presentation/*"
   ],
-  "bugs": {
-    "url": "https://github.com/Dictionar32/tailwind-styled-v4/issues"
-  },
-  "readme": "README.md",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
-  ],
+  "bin": {
+    "tw": "dist/tw.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -62,10 +29,6 @@
       "types": "./dist/compiler.d.ts",
       "import": "./dist/compiler.mjs"
     },
-    "./animate": {
-      "types": "./dist/animate.d.ts",
-      "import": "./dist/animate.mjs"
-    },
     "./scanner": {
       "types": "./dist/scanner.d.ts",
       "import": "./dist/scanner.mjs"
@@ -74,25 +37,21 @@
       "types": "./dist/engine.d.ts",
       "import": "./dist/engine.mjs"
     },
-    "./theme": {
-      "types": "./dist/theme.d.ts",
-      "import": "./dist/theme.mjs"
-    },
-    "./preset": {
-      "types": "./dist/preset.d.ts",
-      "import": "./dist/preset.mjs"
-    },
-    "./cli": {
-      "types": "./dist/cli.d.ts",
-      "import": "./dist/cli.mjs"
-    },
     "./analyzer": {
       "types": "./dist/analyzer.d.ts",
       "import": "./dist/analyzer.mjs"
     },
-    "./shared": {
-      "types": "./dist/shared.d.ts",
-      "import": "./dist/shared.mjs"
+    "./theme": {
+      "types": "./dist/theme.d.ts",
+      "import": "./dist/theme.mjs"
+    },
+    "./animate": {
+      "types": "./dist/animate.d.ts",
+      "import": "./dist/animate.mjs"
+    },
+    "./syntax": {
+      "types": "./dist/syntax.d.ts",
+      "import": "./dist/syntax.mjs"
     },
     "./runtime": {
       "types": "./dist/runtime.d.ts",
@@ -101,6 +60,14 @@
     "./runtime-css": {
       "types": "./dist/runtime-css.d.ts",
       "import": "./dist/runtime-css.mjs"
+    },
+    "./shared": {
+      "types": "./dist/shared.d.ts",
+      "import": "./dist/shared.mjs"
+    },
+    "./preset": {
+      "types": "./dist/preset.d.ts",
+      "import": "./dist/preset.mjs"
     },
     "./plugin": {
       "types": "./dist/plugin.d.ts",
@@ -113,6 +80,14 @@
     "./plugin-registry": {
       "types": "./dist/plugin-registry.d.ts",
       "import": "./dist/plugin-registry.mjs"
+    },
+    "./atomic": {
+      "types": "./dist/atomic.d.ts",
+      "import": "./dist/atomic.mjs"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.mjs"
     },
     "./next": {
       "types": "./dist/next.d.ts",
@@ -134,87 +109,35 @@
       "types": "./dist/svelte.d.ts",
       "import": "./dist/svelte.mjs"
     },
-    "./syntax": {
-      "types": "./dist/syntax.d.ts",
-      "import": "./dist/syntax.mjs"
-    },
-    "./testing": {
-      "types": "./dist/testing.d.ts",
-      "import": "./dist/testing.mjs"
-    },
-    "./storybook-addon": {
-      "types": "./dist/storybook-addon.d.ts",
-      "import": "./dist/storybook-addon.mjs"
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.mjs"
     },
     "./devtools": {
       "types": "./dist/devtools.d.ts",
       "import": "./dist/devtools.mjs"
     },
-    "./atomic": {
-      "types": "./dist/atomic.d.ts",
-      "import": "./dist/atomic.mjs"
-    },
     "./dashboard": {
       "types": "./dist/dashboard.d.ts",
       "import": "./dist/dashboard.mjs"
+    },
+    "./storybook-addon": {
+      "types": "./dist/storybook-addon.d.ts",
+      "import": "./dist/storybook-addon.mjs"
     }
   },
   "scripts": {
-    "build": "npm run build:packages && tsup --config tsup.config.ts && npm run build -w examples/next-js-app",
+    "build": "npm run build:packages && tsup && npm run build -w examples/next-js-app",
     "build:packages": "turbo run build --continue",
     "build:rust": "cd native && cargo build --release",
-    "build:dev": "npm run build:packages && tsup --config tsup.config.ts --sourcemap --watch",
-    "build:release": "npm run build:packages && tsup --config tsup.config.ts --no-sourcemap && npm run build -w examples/next-js-app",
-    "verify:builds": "npm run build",
+    "build:dev": "npm run build:packages && tsup --sourcemap --watch",
+    "build:release": "npm run build:packages && tsup --no-sourcemap && npm run build -w examples/next-js-app",
     "clean": "rm -rf dist && turbo run clean --continue",
-    "dev": "tsup --config tsup.config.ts --watch",
+    "dev": "tsup --watch",
     "test": "npx tsc --noEmit -p examples/next-js-app/tsconfig.json",
-    "test:compiler": "npm -w packages/compiler test",
-    "test:cache": "node --test scripts/v45/cache.test.mjs",
-    "test:sync": "node --test scripts/v45/sync.test.mjs",
-    "test:gate": "npm run test:compiler && npm run test:cache && npm run test:sync",
-    "check": "turbo run check --continue && npm run check:types && npm run check:boundaries && npm run check:umbrella && npm run check:file-deps",
-    "check:types": "tsc --noEmit",
-    "check:boundaries": "depcruise --config dependency-cruiser.cjs packages",
-    "check:umbrella": "tsx scripts/check-umbrella-exports.ts",
-    "graph:file-deps": "tsx scripts/graph/monorepo-file-deps.ts",
-    "check:file-deps": "tsx scripts/graph/monorepo-file-deps.ts --check",
-    "validate:deps": "tsx scripts/validate/dependency-matrix-check.ts",
+    "test:compiler": "npm -w packages/domain/compiler test",
     "lint": "biome check --write .",
-    "pack:check": "tsx scripts/check-pack-artifacts.ts",
-    "version:sync": "tsx scripts/version-sync.ts",
-    "schemas:generate": "tsx scripts/generate-json-schemas.ts",
-    "schemas:check": "tsx scripts/generate-json-schemas.ts --check",
-    "wave1:export-schemas": "node scripts/wave1/export-schemas.mjs",
-    "wave1:gate": "npm run wave1:export-schemas && npm run schemas:generate && npm run schemas:check && npm -w packages/shared run check",
-    "stability:cross-package": "npm -w packages/shared test && npm -w packages/shared run check && npm -w packages/vscode test && npm -w packages/vscode run check && npm -w packages/studio-desktop test && npm -w packages/studio-desktop run check && npm run wave1:gate && npm run wave4:schema-drift && npm run wave3:esm-cutover && npm run adapter:smoke && npm run artifact:assertions && npm run remove-js-fallback:check",
-    "build:fast": "npm run build:packages && tsup --config tsup.config.ts",
-    "validate": "tsx scripts/validate/final-report.ts",
-    "validate:json": "tsx scripts/validate/final-report.ts --json",
-    "validate:final": "tsx scripts/validate/final-report.ts",
-    "health:summary": "tsx scripts/validate/health-summary.ts",
-    "adapter:smoke": "tsx scripts/validate/adapter-smoke.ts",
-    "artifact:assertions": "tsx scripts/validate/artifact-assertions.ts",
-    "remove-js-fallback:check": "tsx scripts/validate/remove-js-fallback-check.ts",
-    "test:wave2:exports": "node --test scripts/wave2/export-compat.test.mjs",
-    "test:wave3:root-esm": "node --test scripts/wave3/root-esm-only.test.mjs",
-    "wave2:gate": "npm run test:wave2:exports",
-    "wave4:schema-drift": "npm run wave1:export-schemas && npm run schemas:check",
-    "esm:nonregression": "tsx scripts/validate/esm-cjs-assumption-check.ts",
-    "esm:package-cutover": "tsx scripts/validate/package-esm-cutover.ts",
-    "wave3:esm-cutover": "npm run test:wave3:root-esm && npm run esm:nonregression && npm run esm:package-cutover"
-  },
-  "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
+    "validate": "tsx scripts/validate/final-report.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
@@ -234,32 +157,24 @@
     "oxc-parser": "^0.120.0",
     "oxc-transform": "^0.120.0"
   },
-  "dependencies": {
-    "@clack/prompts": "^1.1.0",
-    "@tailwind-styled/analyzer": "^5.0.4",
-    "@tailwind-styled/animate": "^5.0.4",
-    "@tailwind-styled/atomic": "^5.0.4",
-    "@tailwind-styled/compiler": "^5.0.4",
-    "@tailwind-styled/core": "^5.0.4",
-    "@tailwind-styled/dashboard": "^5.0.4",
-    "@tailwind-styled/devtools": "^5.0.4",
-    "@tailwind-styled/engine": "^5.0.4",
-    "@tailwind-styled/next": "^5.0.4",
-    "@tailwind-styled/plugin": "^5.0.4",
-    "@tailwind-styled/plugin-registry": "^5.0.4",
-    "@tailwind-styled/preset": "^5.0.4",
-    "@tailwind-styled/rspack": "^5.0.4",
-    "@tailwind-styled/runtime": "^5.0.4",
-    "@tailwind-styled/runtime-css": "^5.0.4",
-    "@tailwind-styled/scanner": "^5.0.4",
-    "@tailwind-styled/shared": "^5.0.4",
-    "@tailwind-styled/storybook-addon": "^5.0.4",
-    "@tailwind-styled/svelte": "^5.0.4",
-    "@tailwind-styled/testing": "^5.0.4",
-    "@tailwind-styled/theme": "^5.0.4",
-    "@tailwind-styled/vite": "^5.0.4",
-    "@tailwind-styled/vue": "^5.0.4",
-    "create-tailwind-styled": "^5.0.4",
-    "ts-pattern": "^5.9.0"
+  "keywords": [
+    "tailwind",
+    "tailwindcss",
+    "styled-components",
+    "css-in-js",
+    "variants",
+    "zero-runtime",
+    "react",
+    "next.js",
+    "vite",
+    "typescript"
+  ],
+  "homepage": "https://github.com/Dictionar32/tailwind-styled-v4",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dictionar32/tailwind-styled-v4.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dictionar32/tailwind-styled-v4/issues"
   }
 }
