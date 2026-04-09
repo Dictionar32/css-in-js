@@ -10,18 +10,9 @@
     "styled-components",
     "css-in-js",
     "variants",
-    "cva",
-    "stitches",
-    "panda-css",
-    "twin.macro",
-    "react",
-    "next.js",
     "vite",
     "zero-runtime",
-    "typescript",
-    "shadcn",
-    "radix",
-    "headless-ui"
+    "typescript"
   ],
   "homepage": "https://github.com/Dictionar32/tailwind-styled-v4",
   "repository": {
@@ -38,7 +29,6 @@
     "node": ">=20"
   },
   "main": "./dist/plugin.js",
-  "module": "./dist/plugin.js",
   "types": "./dist/plugin.d.ts",
   "exports": {
     ".": {
@@ -46,30 +36,20 @@
       "import": "./dist/plugin.js"
     }
   },
-  "files": [
-    "dist",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
   "scripts": {
-    "build": "tsup",
-    "build:release": "tsup",
-    "check": "tsc --noEmit -p tsconfig.json",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "dev": "tsup --watch",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/vite"
-  },
-  "dependencies": {
-    "@tailwind-styled/compiler": "^5.0.4",
-    "@tailwind-styled/engine": "^5.0.4",
-    "@tailwind-styled/scanner": "^5.0.4",
-    "inversify": "^8.1.0",
-    "reflect-metadata": "^0.2.2",
-    "zod": "^4.3.6"
+    "build": "tsup src/plugin.ts --format esm --dts --out-dir dist --clean",
+    "dev": "tsup src/plugin.ts --format esm --dts --out-dir dist --watch",
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "peerDependencies": {
     "vite": ">=6.2.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^20",

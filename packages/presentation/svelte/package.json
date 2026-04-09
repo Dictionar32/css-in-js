@@ -3,7 +3,7 @@
   "version": "5.0.4",
   "description": "Svelte 4/5 adapter for tailwind-styled-v4 — cv(), tw(), and use:styled action",
   "type": "module",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -11,25 +11,25 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
-    "dev": "tsup src/index.ts --format esm --dts --watch",
-    "check": "node ../../node_modules/typescript/bin/tsc --noEmit",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/svelte"
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format esm --dts --out-dir dist --watch",
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "peerDependencies": {
-    "svelte": ">=4.0.0",
-    "tailwind-merge": ">=3.5.0"
+    "svelte": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "svelte": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "svelte": "^5.0.0",
-    "tailwind-merge": "^3.5.0",
-    "tsup": "^8.0.0",
-    "typescript": "^6.0.0"
+    "tsup": "^8",
+    "typescript": "^6"
   },
   "keywords": [
     "tailwind",
@@ -43,11 +43,5 @@
   "engines": {
     "node": ">=20"
   },
-  "sideEffects": false,
-  "dependencies": {
-    "@tailwind-styled/shared": "^5.0.4",
-    "inversify": "^8.1.0",
-    "reflect-metadata": "^0.2.2",
-    "zod": "^4.3.6"
-  }
+  "sideEffects": false
 }

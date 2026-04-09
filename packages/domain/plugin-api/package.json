@@ -9,7 +9,6 @@
     "node": ">=20"
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -17,19 +16,12 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
-    "check": "tsc --noEmit",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "dev": "tsup src/index.ts --format esm --dts --out-dir dist --watch",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/plugin-api"
-  },
-  "dependencies": {
-    "@tailwind-styled/shared": "^5.0.4",
-    "zod": "^4.3.6"
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "tsup": "^8",

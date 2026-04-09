@@ -1,7 +1,7 @@
 {
   "name": "@tailwind-styled/plugin",
   "version": "5.0.4",
-  "description": "Plugin system for tailwind-styled-v5 \u2014 extend compiler pipeline at any stage",
+  "description": "Plugin system for tailwind-styled-v5 — extend compiler pipeline at any stage",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -9,38 +9,19 @@
     "node": ">=20"
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./plugins": {
-      "types": "./dist/plugins.d.ts",
-      "import": "./dist/plugins.js"
-    },
-    "./presets": {
-      "types": "./dist/presets.d.ts",
-      "import": "./dist/presets.js"
     }
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "files": ["dist", "README.md"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "check": "tsc --noEmit",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/plugin"
-  },
-  "dependencies": {
-    "@tailwind-styled/plugin-api": "^5.0.4",
-    "inversify": "^8.1.0",
-    "reflect-metadata": "^0.2.2",
-    "zod": "^4.3.6"
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format esm --dts --out-dir dist --watch",
+    "clean": "rm -rf dist",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "tsup": "^8",

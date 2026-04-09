@@ -23,9 +23,7 @@
     "onLanguage:svelte"
   ],
   "main": "./dist/extension.js",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "contributes": {
     "commands": [
       {
@@ -60,10 +58,9 @@
   "scripts": {
     "build": "tsup src/extension.ts --format cjs --out-dir dist --external vscode",
     "dev": "tsup src/extension.ts --format cjs --out-dir dist --watch --external vscode",
+    "clean": "rm -rf dist",
     "check": "tsc --noEmit",
-    "test": "tsx --test src/providers/classToken.test.ts src/providers/renameProviderError.test.ts",
-    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/vscode"
+    "test": "tsx --test src/providers/classToken.test.ts src/providers/renameProviderError.test.ts"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -71,11 +68,5 @@
     "tsx": "^4.21.0",
     "tsup": "^8",
     "typescript": "^6"
-  },
-  "dependencies": {
-    "@tailwind-styled/engine": "^5.0.4",
-    "inversify": "^8.1.0",
-    "reflect-metadata": "^0.2.2",
-    "zod": "^4.3.6"
   }
 }
