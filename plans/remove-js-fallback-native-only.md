@@ -1,6 +1,17 @@
-# Plan: Remove All JS Fallbacks — Native-Only Mode
+# Plan: Remove All JS Fallbacks -- Native-Only Mode
 
-## Goal
+> **Status 2026-04-07**: Eksekusi sudah dimulai (Sprint C wave-1).
+> - Env var `TWS_NO_NATIVE`/`TWS_NO_RUST`/`TWS_DISABLE_NATIVE` sudah dihapus dari loader
+> - Kontrak `ast-native` dipersempit ke `engine: "rust"` saja
+> - `scanWorkspaceAsync` tidak lagi silent-fallback saat worker error
+> - Gate `npm run remove-js-fallback:check` aktif di `stability:cross-package`
+>
+> Yang masih tersisa: ~563 baris di 11 file (lihat tabel di bawah).
+> Target: Sprint C eksekusi bertahap.
+
+---
+
+Goal
 Remove all JavaScript fallback code that exists as alternatives to native (Rust) bindings. Enforce native-only mode: if the Rust binding is not available, hard fail immediately.
 
 ## Scope: 11 Files, ~700+ Lines of Fallback Code

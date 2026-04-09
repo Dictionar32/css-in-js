@@ -1,7 +1,7 @@
 {
   "name": "@tailwind-styled/vue",
   "version": "5.0.4",
-  "description": "Vue 3 adapter for tailwind-styled-v4 \u2014 tw() components with variants",
+  "description": "Vue 3 adapter for tailwind-styled-v4 — tw() components with variants",
   "type": "module",
   "sideEffects": false,
   "engines": {
@@ -27,7 +27,7 @@
     "pack:check": "node ../../scripts/check-pack-artifacts.mjs packages/vue"
   },
   "peerDependencies": {
-    "tailwind-merge": ">=2.0.0",
+    "tailwind-merge": ">=3.5.0",
     "vue": ">=3.3.0"
   },
   "devDependencies": {

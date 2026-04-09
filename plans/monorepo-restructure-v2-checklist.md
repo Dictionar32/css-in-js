@@ -1,4 +1,12 @@
-# Approved Implementation Checklist
+# Monorepo Restructure v2 Checklist
+
+> **Status 2026-04-07**: 14 item selesai (checked), 41 item masih pending.
+> Gate yang sudah aktif: `adapter:smoke`, `artifact:assertions`, `stability:cross-package`.
+> Lihat `docs/master-list-unimplemented-2026-04-07.md` section C untuk detail.
+
+---
+
+Approved Implementation Checklist
 
 Source of truth:
 - [monorepo-restructure-v2-mermaid.md](c:/Users/User/Documents/demoPackageNpm/focus/tailwind-styled-v4.5-platform-modify-v3_fixed%20(1)/library/plans/monorepo-restructure-v2-mermaid.md)

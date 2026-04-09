@@ -1,6 +1,7 @@
 {
   "name": "@tailwind-styled/atomic",
   "version": "5.0.4",
+  "license": "MIT",
   "description": "Atomic CSS generation for tailwind-styled-v4",
   "type": "module",
   "sideEffects": false,
@@ -19,9 +20,6 @@
   "files": [
     "dist"
   ],
-  "peerDependencies": {
-    "@tailwind-styled/compiler": "^5.0.4"
-  },
   "devDependencies": {
     "@types/node": "^20",
     "tsup": "^8",

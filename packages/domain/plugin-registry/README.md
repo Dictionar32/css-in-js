@@ -1,275 +1,124 @@
-# @tailwind-styled/plugin-registry
+# Plugin Registry
 
-Plugin discovery and install helper for the tailwind-styled v5 ecosystem.
+`@tailwind-styled/plugin-registry` menyediakan CLI untuk menemukan dan menginstall plugin tailwind-styled.
 
-## Installation
+## Instalasi
 
+Plugin registry sudah termasuk dalam `tailwind-styled-v4`. Gunakan via CLI `tw` atau `tw-plugin` langsung.
+
+## Commands
+
+### `tw plugin search <query>`
 ```bash
-npm install @tailwind-styled/plugin-registry
+tw plugin search animation
+# @tailwind-styled/plugin-animation@4.2.0 [official]
+#   Animation presets and keyframes
+#   tags: animation, motion, transition
+
+tw plugin search animation --json
+# [{ "name": "...", "version": "...", ... }]
 ```
 
-Or use the CLI directly:
-
+### `tw plugin list`
 ```bash
-npx @tailwind-styled/plugin-registry <command>
+tw plugin list
+tw plugin list --json
 ```
 
-## CLI Commands
-
-### search
-
-Search for plugins in the registry.
-
+### `tw plugin info <package>`
 ```bash
-tw-plugin search <query> [--json]
+tw plugin info @tailwind-styled/plugin-animation
+tw plugin info @tailwind-styled/plugin-animation --json
 ```
 
-### list
-
-List all available plugins.
-
+### `tw plugin install <package>`
 ```bash
-tw-plugin list [--json]
-```
+# Install plugin resmi
+tw plugin install @tailwind-styled/plugin-animation
 
-### info
+# Dry run (tidak install nyata)
+tw plugin install @tailwind-styled/plugin-animation --dry-run
 
-Get detailed information about a specific plugin.
+# Plugin eksternal (di luar registry) — perlu konfirmasi eksplisit
+tw plugin install my-custom-plugin --allow-external --yes
 
-```bash
-tw-plugin info <package> [--json]
-```
-
-### install
-
-Install a plugin.
-
-```bash
-tw-plugin install <package> [--dry-run] [--allow-external] [--yes]
-```
-
-### uninstall
-
-Uninstall a plugin.
-
-```bash
-tw-plugin uninstall <package> [--dry-run]
-```
-
-### update-check
-
-Check for available updates for installed plugins.
-
-```bash
-tw-plugin update-check [--json]
-```
-
-### verify
-
-Verify the integrity of an installed plugin.
-
-```bash
-tw-plugin verify <package> [--json]
+# Debug mode — lihat timing dan path eksekusi
+tw plugin install @tailwind-styled/plugin-animation --debug
 ```
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--json` | Output as JSON (machine-readable) |
-| `--debug` | Show timing and execution details |
-| `--registry` | Use external registry URL |
+| Option | Deskripsi |
+|--------|-----------|
+| `--json` | Output JSON (untuk scripting / CI) |
+| `--debug` | Tampilkan timing dan detail eksekusi ke stderr |
+| `--dry-run` | Simulasi install tanpa eksekusi nyata |
+| `--allow-external` | Izinkan install plugin di luar registry |
+| `--yes` | Konfirmasi otomatis untuk plugin eksternal |
 
-## Programmatic API
+## Error codes
 
-### PluginRegistry Class
+| Code | Arti |
+|------|------|
+| `INVALID_PLUGIN_NAME` | Nama plugin tidak sesuai format `(@scope/)?name` |
+| `PLUGIN_NOT_FOUND` | Plugin tidak ada di registry — gunakan `search` |
+| `EXTERNAL_CONFIRMATION_REQUIRED` | Plugin eksternal butuh `--allow-external --yes` |
+| `INSTALL_COMMAND_FAILED` | Gagal menjalankan `npm install` |
+| `INSTALL_FAILED` | `npm install` exit non-zero |
 
-```typescript
-import { PluginRegistry, getRegistry } from "@tailwind-styled/plugin-registry"
-```
+## Registry resmi
 
-#### Constructor
+| Plugin | Deskripsi |
+|--------|-----------|
+| `@tailwind-styled/plugin-animation` | Animation presets, keyframes, spring physics |
+| `@tailwind-styled/plugin-typography` | Prose dan typography utilities |
+| `@tailwind-styled/plugin-forms` | Form input styling helpers |
+| `@tailwind-styled/plugin-container-queries` | @container query utilities |
 
-```typescript
-new PluginRegistry(registryData?: RegistryData, options?: RegistryOptions)
-```
+## Known limitations
 
-#### Static Methods
+- ✅ Marketplace publishing Sprint 9 done — `tw plugin marketplace publish/search/featured/info/unpublish`
+- ✅ Sprint 10+ done: `tw plugin verify <n>` — sha256 integrity check via `verifyIntegrity()`
+- ✅ Sprint 10+ done: `tw plugin update-check` — version diff via `checkForUpdate()` + `checkAllUpdates()`
 
-```typescript
-// Load registry from a custom URL
-await PluginRegistry.loadFromUrl(url: string): Promise<PluginRegistry>
-```
+Lihat juga: [docs/ops/plugin-registry-track-b-issues.md](ops/plugin-registry-track-b-issues.md)
 
-#### Instance Methods
+## Publish Plugin ke Registry
 
-```typescript
-// Get registry version
-getVersion(): string
+Untuk mempublish plugin ke registry resmi:
 
-// Search plugins by query (matches name, description, or tags)
-search(query: string): PluginInfo[]
+1. **Buat package** dengan keyword `tailwind-styled-plugin` di `package.json`:
+   ```json
+   {
+     "name": "@your-scope/plugin-name",
+     "keywords": ["tailwind-styled-plugin"],
+     "tailwindStyled": {
+       "manifest": {
+         "name": "@your-scope/plugin-name",
+         "version": "1.0.0",
+         "description": "Deskripsi plugin",
+         "entrypoint": "./dist/index.js"
+       }
+     }
+   }
+   ```
 
-// Get all plugins
-getAll(): PluginInfo[]
+2. **Implementasikan** kontrak `TwPlugin` dari `@tailwind-styled/plugin-api`
 
-// Get plugin by name
-getByName(pluginName: string): PluginInfo | undefined
+3. **Publish ke npm** (`npm publish`)
 
-// Install a plugin
-install(pluginName: string, options?: InstallOptions): InstallResult
+4. **Request review** — buka issue di repo `tailwind-styled-v4` dengan label `plugin-submission`
 
-// Uninstall a plugin
-uninstall(pluginName: string, options?: { dryRun?: boolean; npmBin?: string }): { plugin: string; uninstalled: boolean; command: string; exitCode: number }
+## Status Track B
 
-// Verify plugin integrity
-verifyIntegrity(pluginName: string): { ok: boolean; reason?: string }
+Fitur berikut masih pending (belum dikerjakan):
 
-// Check for update on a specific plugin
-checkForUpdate(pluginName: string): { hasUpdate: boolean; current?: string; latest?: string; error?: string }
+| Fitur | Status |
+|---|---|
+| Integration tests | ❌ Belum |
+| SLO benchmark workflow | ❌ Belum |
+| Security hardening | ❌ Belum |
+| `--allowlist` flag | ❌ Belum |
+| Docs finalisasi | 🔄 Ini file ini |
 
-// Check all plugins for updates
-checkAllUpdates(): Array<{ name: string; hasUpdate: boolean; current?: string; latest?: string; error?: string }>
-```
-
-#### Types
-
-```typescript
-interface PluginInfo {
-  name: string
-  description: string
-  version: string
-  tags: string[]
-  official?: boolean
-  docs?: string
-  install?: string
-  integrity?: string
-}
-
-interface InstallOptions {
-  dryRun?: boolean
-  npmBin?: string
-  allowExternal?: boolean
-  confirmExternal?: boolean
-}
-
-interface InstallResult {
-  plugin: string
-  installed: boolean
-  command: string
-  exitCode: number
-}
-```
-
-#### Error Handling
-
-```typescript
-import { PluginRegistryError } from "@tailwind-styled/plugin-registry"
-
-try {
-  registry.install("some-plugin")
-} catch (error) {
-  if (error instanceof PluginRegistryError) {
-    console.error(error.code)    // Error code
-    console.error(error.message) // Error message
-    console.error(error.context) // Additional context
-  }
-}
-```
-
-### getRegistry
-
-Get the default registry instance.
-
-```typescript
-import { getRegistry } from "@tailwind-styled/plugin-registry"
-
-const registry = getRegistry()
-```
-
-## Examples
-
-### CLI Examples
-
-```bash
-# Search for plugins
-tw-plugin search forms
-
-# List all plugins
-tw-plugin list
-
-# Get plugin info
-tw-plugin info @tailwind-styled/plugin-forms
-
-# Install a plugin
-tw-plugin install @tailwind-styled/plugin-forms
-
-# Dry run install
-tw-plugin install @tailwind-styled/plugin-forms --dry-run
-
-# Uninstall a plugin
-tw-plugin uninstall @tailwind-styled/plugin-forms
-
-# Check for updates
-tw-plugin update-check
-
-# Verify plugin integrity
-tw-plugin verify @tailwind-styled/plugin-forms
-
-# Use JSON output
-tw-plugin list --json
-
-# Use custom registry
-tw-plugin list --registry https://example.com/registry.json
-```
-
-### Programmatic Examples
-
-```typescript
-import { getRegistry, PluginRegistry } from "@tailwind-styled/plugin-registry"
-
-// Get default registry
-const registry = getRegistry()
-
-// Search for plugins
-const results = registry.search("forms")
-console.log(results)
-
-// Get all plugins
-const allPlugins = registry.getAll()
-
-// Get plugin info
-const plugin = registry.getByName("@tailwind-styled/plugin-forms")
-if (plugin) {
-  console.log(`Found ${plugin.name} v${plugin.version}`)
-  console.log(plugin.description)
-}
-
-// Install a plugin
-const result = registry.install("@tailwind-styled/plugin-forms", {
-  dryRun: true // Check what would happen
-})
-console.log(result.command) // The npm command that would be run
-
-// Check for updates
-const updates = registry.checkAllUpdates()
-const updatesAvailable = updates.filter(u => u.hasUpdate)
-console.log(`${updatesAvailable.length} plugins have updates`)
-
-// Verify integrity
-const verification = registry.verifyIntegrity("@tailwind-styled/plugin-forms")
-if (verification.ok) {
-  console.log("Plugin integrity verified")
-} else {
-  console.error(verification.reason)
-}
-
-// Load from custom registry
-const customRegistry = await PluginRegistry.loadFromUrl(
-  "https://example.com/registry.json"
-)
-```
-
-## License
-
-MIT
+Lihat `docs/ops/plugin-registry-track-b-issues.md` untuk template issue yang siap dikerjakan.

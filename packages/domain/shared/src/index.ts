@@ -172,10 +172,16 @@ export function resolveNativeBindingCandidates(options: ResolveCandidatesOptions
     const envPath = process.env[envVar]
     if (envPath) {
       if (enforceNodeExtensionForEnvPath && !envPath.endsWith(".node")) {
-        candidates.push(envPath + ".node")
-      } else {
-        candidates.push(envPath)
+        // FIX: throw a clear error instead of silently appending ".node".
+        // Silent append hides misconfiguration and produces a path the user
+        // never specified, making debugging very hard.
+        throw TwError.fromIo(
+          "NATIVE_PATH_INVALID_EXTENSION",
+          `Invalid native binding path from ${envVar}="${envPath}". Expected a .node file.`,
+          { envVar, envPath }
+        )
       }
+      candidates.push(envPath)
     }
   }
 

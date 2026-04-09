@@ -1,6 +1,14 @@
 # @tailwind-styled/compiler v5 Upgrade Plan
 
-## Ringkasan
+> **Status 2026-04-07**: Plan ini mencakup 5 fase upgrade.
+> - Phase 1-3: Sudah sebagian berjalan (native bridge migrate, DSE ter-wire di pipeline)
+> - Phase 4: Tests baseline ada (`classMerger` + `deadStyleEliminator`)
+> - Phase 5: Belum dimulai (full production DSE + incremental rebuild)
+> - Lihat `docs/master-list-unimplemented-2026-04-07.md` item #7 untuk detail.
+
+---
+
+Ringkasan
 
 Dokumen ini berisi rencana upgrade komprehensif untuk @tailwind-styled/compiler dari v4.5 ke v5. Semua 14 rekomendasi akan diimplementasi dalam 5 fase.
 

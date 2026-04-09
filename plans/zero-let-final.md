@@ -1,6 +1,11 @@
-# Zero Let — Final Batch (32 remaining declarations)
+# Zero Let -- Final Batch
 
-## Completed So Far
+> **Status 2026-04-07**: 32 `let` declarations di 19 file masih belum dikonversi (master list item E).
+> Prioritas: Low -- tidak memblokir release. Target Sprint D.
+
+---
+
+Completed So Far
 - Scanner: 22 → 0 ✅
 - analyzer/binding.ts: 1 → 0 ✅
 - animate/binding.ts: 1 → 0 ✅

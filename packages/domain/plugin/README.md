@@ -1,241 +1,210 @@
-# @tailwind-styled/plugin v5
+# Plugins
 
-Plugin system untuk tailwind-styled-v5 — extend compiler pipeline di berbagai tahap.
+## Vite Plugin
 
-## Instalasi
+```ts
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import { tailwindStyledPlugin } from "@tailwind-styled/vite"
 
-```bash
-npm install @tailwind-styled/plugin@5.0.0
-```
-
-## API Utama
-
-### `use(plugin, config)`
-
-Register plugin ke global registry.
-
-```typescript
-import { use, presetVariants } from "@tailwind-styled/plugin"
-
-use(presetVariants())
-```
-
-### `createTw(opts)`
-
-Buat scoped instance dengan registry terpisah. Berguna untuk library atau sub-application yang butuh isolasi.
-
-```typescript
-import { createTw, pluginAnimation, pluginTokens } from "@tailwind-styled/plugin"
-
-const { registry, use } = createTw({
+export default defineConfig({
   plugins: [
-    pluginAnimation(),
-    pluginTokens({ colors: { primary: "#3b82f6" } })
-  ]
+    react(),
+    tailwindStyledPlugin({
+      generateSafelist: true,
+      useEngineBuild: true,
+      scanReportOutput: ".tailwind-styled-scan-report.json",
+    }),
+  ],
 })
 ```
 
-Return value:
-- `registry` — PluginRegistry object
-- `use(plugin)` — Function untuk add plugin ke scoped registry
+## Rspack Plugin
 
-## Plugin Resmi
+```ts
+import { tailwindStyledRspackPlugin } from "@tailwind-styled/rspack"
 
-Import dari `./plugins`:
-
-```typescript
-import { 
-  pluginAnimation, 
-  pluginTokens, 
-  pluginTypography 
-} from "@tailwind-styled/plugin/plugins"
-
-// pluginAnimation - Animation utilities dan variants
-// pluginTokens   - Design tokens sebagai CSS variables
-// pluginTypography - Prose utility class
+export default {
+  plugins: [tailwindStyledRspackPlugin()],
+}
 ```
 
-### pluginAnimation
+## Next.js Plugin
 
-Menambahkan:
-- `motion-safe` / `motion-reduce` variants
-- Animation utilities: `animate-fade-in`, `animate-slide-up`, `animate-spin`, etc.
-- CSS @keyframes injection
+```ts
+// next.config.ts
+import { withTailwindStyled } from "tailwind-styled-v4/next"
 
-```typescript
-use(pluginAnimation({ 
-  prefix: "tw-anim",        // default: "tw-anim"
-  reducedMotion: true      // default: true
-}))
+export default withTailwindStyled({
+  routeCss: true,           // CSS splitting per route (production)
+  deadStyleElimination: true,
+  staticVariants: true,
+  devtools: true,           // DevTools overlay di development
+})(nextConfig)
 ```
 
-### pluginTokens
+## Engine plugins
 
-Menambahkan design tokens sebagai CSS custom properties + utility classes.
+Plugin engine memungkinkan hook ke lifecycle scan/build/watch:
 
-```typescript
-use(pluginTokens({
-  colors: {
-    primary: "#3b82f6",
-    secondary: "#6366f1",
-  },
-  fonts: {
-    sans: "InterVariable, system-ui",
-  },
-  spacing: {
-    sm: "0.5rem",
-    md: "1rem",
-  },
-  generateUtilities: true // default: true
-}))
+```ts
+import { createEngine } from "@tailwind-styled/engine"
+
+const engine = await createEngine({
+  root: process.cwd(),
+  plugins: [
+    {
+      name: "my-plugin",
+      beforeScan(ctx) { console.log("scanning...") },
+      transformClasses(classes) {
+        // Filter atau tambah classes
+        return classes.filter(c => !c.startsWith("debug-"))
+      },
+      afterBuild(result) {
+        console.log(`built: ${result.mergedClassList.split(" ").length} classes`)
+      },
+    },
+  ],
+})
 ```
 
-### pluginTypography
+Plugin hooks: `beforeScan`, `afterScan`, `transformClasses`, `beforeBuild`, `afterBuild`, `onError`
 
-Menambahkan `prose` utility class untuk rich text content.
+## Object Config Transform Hook
 
-```typescript
-use(pluginTypography({
-  color: "inherit",
-  fontFamily: "inherit", 
-  maxWidth: "65ch"
-}))
-```
+Plugin package `@tailwind-styled/plugin` sekarang bisa memodifikasi konfigurasi `tw.tag({ ... })`
+sebelum compiler menghasilkan kode.
 
-## Presets Bawaan
+```ts
+import { use, type TwPlugin } from "@tailwind-styled/plugin"
 
-Import dari root atau `./presets`:
-
-```typescript
-import { 
-  presetVariants, 
-  presetScrollbar, 
-  presetTokens 
-} from "@tailwind-styled/plugin"
-
-// atau
-import { presetVariants } from "@tailwind-styled/plugin/presets"
-```
-
-| Preset | Deskripsi |
-|--------|-----------|
-| `presetVariants()` | group-hover, group-focus, peer-checked, rtl, ltr, print, motion-safe, motion-reduce |
-| `presetScrollbar()` | scrollbar-none, scrollbar-thin, scrollbar-auto |
-| `presetTokens(tokens)` | Color tokens sebagai CSS variables |
-| `presetRustCompiler()` | Rust CSS compiler integration |
-
-## Membuat Plugin Sendiri
-
-```typescript
-import { TwPlugin, TwContext } from "@tailwind-styled/plugin"
-
-const myPlugin: TwPlugin = {
-  name: "my-custom-plugin",
-  
-  setup(ctx: TwContext) {
-    // Add variant
-    ctx.addVariant("print", (sel) => `@media print { ${sel} }`)
-    
-    // Add utility
-    ctx.addUtility("glow", { "box-shadow": "0 0 20px currentColor" })
-    
-    // Add token
-    ctx.addToken("brand-color", "#ff4d6d")
-    
-    // Add transform hook untuk tw.tag({ ... })
+const brandVariantPlugin: TwPlugin = {
+  name: "brand-variant-plugin",
+  setup(ctx) {
     ctx.addTransform((config, meta) => {
-      // Modify component config
-      return config
+      if (meta.tag !== "button") return config
+      return {
+        ...config,
+        variants: {
+          ...config.variants,
+          brand: {
+            primary: "bg-blue-600 text-white",
+            secondary: "bg-gray-200 text-gray-800",
+          },
+        },
+        defaultVariants: {
+          ...config.defaultVariants,
+          brand: "primary",
+        },
+      }
     })
-    
-    // Hook into CSS generation
-    ctx.onGenerateCSS((css) => {
-      // Modify generated CSS
-      return css
-    })
-    
-    // Hook into build end
-    ctx.onBuildEnd(async () => {
-      // Cleanup atau reporting
-    })
-  }
+  },
 }
 
-use(myPlugin)
+use(brandVariantPlugin)
 ```
 
-## TwContext API
+## Plugin registry
 
-| Method | Deskripsi |
-|--------|-----------|
-| `addVariant(name, resolver)` | Tambah variant baru |
-| `addUtility(name, styles)` | Tambah utility class |
-| `addToken(name, value)` | Tambah design token (CSS variable) |
-| `addTransform(fn)` | Hook untuk tw.tag({ ... }) transform |
-| `onGenerateCSS(hook)` | Hook ke CSS generation phase |
-| `onBuildEnd(hook)` | Hook ke build end |
-| `getToken(name)` | Ambil live token value (jika token engine tersedia) |
-| `subscribeTokens(callback)` | Subscribe ke token updates |
-
-## Types
-
-```typescript
-import type { 
-  TwPlugin, 
-  TwContext, 
-  PluginRegistry,
-  VariantResolver,
-  UtilityDefinition 
-} from "@tailwind-styled/plugin"
+```bash
+tw plugin search animation      # cari plugin
+tw plugin info @tailwind-styled/plugin-animation  # detail plugin
+tw plugin install @tailwind-styled/plugin-animation  # install
 ```
 
-## Rust CSS Compiler
+Lihat [docs/plugin-registry.md](plugin-registry.md) untuk dokumentasi lengkap.
 
-Generate CSS menggunakan Rust engine:
+## Animate Plugin
 
-```typescript
-import { generateCssRust } from "@tailwind-styled/plugin"
+```ts
+import { use } from "@tailwind-styled/plugin"
+import { pluginAnimation } from "@tailwind-styled/plugin/plugins"
 
-const result = await generateCssRust(["flex", "items-center", "bg-blue-500"])
-// result.css         → generated CSS string
-// result.resolvedCount → number of resolved classes
-// result.unknownCount  → number of unknown classes
-// result.engine        → "rust" | "fallback"
+use(pluginAnimation({
+  defaultDuration: "200ms",
+  defaultEasing: "ease-out",
+}))
+
+// Sekarang komponen bisa pakai preset animasi
+import { animations, injectAnimationCss } from "@tailwind-styled/animate"
+
+const fadeInCss = await animations.fadeIn()
+injectAnimationCss(fadeInCss.css)
 ```
 
-## Live Token Engine
+## Theme Plugin
 
-Plugin automatically integrates dengan live token engine jika tersedia:
+```ts
+import { use } from "@tailwind-styled/plugin"
+import { pluginTokens } from "@tailwind-styled/plugin/plugins"
 
-```typescript
-// Token engine should expose:
-globalThis.__TW_TOKEN_ENGINE__ = {
-  getToken(name: string): string | undefined,
-  getTokens(): Record<string, string>,
-  subscribeTokens(callback): () => void
+use(pluginTokens({
+  brand: "#ff6b6b",
+  "brand-dark": "#cc5555",
+  radius: "0.75rem",
+}))
+
+// Token tersedia sebagai CSS variable di semua komponen
+const Button = tw.button`
+  bg-[var(--tw-brand)]
+  hover:bg-[var(--tw-brand-dark)]
+  rounded-[var(--tw-radius)]
+  text-white px-4 py-2
+`
+```
+
+## DevTools Integration
+
+DevTools overlay tidak perlu konfigurasi plugin — cukup render komponen:
+
+```tsx
+// app/layout.tsx
+import { TwDevTools } from "@tailwind-styled/devtools"
+
+export default function Layout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        {process.env.NODE_ENV === "development" && <TwDevTools />}
+      </body>
+    </html>
+  )
 }
 ```
 
-Plugin akan otomatis sync tokens dan reaktif terhadap perubahan.
+Toggle via `Ctrl+Shift+D`. Panel: Inspector, State, Container, Tokens, Analyzer, Trace.
 
-## Upgrade dari v4
+## Storybook Integration
 
-Untuk upgrade dari v4 ke v5:
+```ts
+// .storybook/preview.ts
+import { withTailwindStyled } from "@tailwind-styled/storybook-addon"
+export const decorators = [withTailwindStyled]
 
-1. **Update import paths** untuk plugin resmi:
-   ```typescript
-   // v4
-   import { pluginAnimation } from "@tailwind-styled/plugin"
-   
-   // v5
-   import { pluginAnimation } from "@tailwind-styled/plugin/plugins"
-   ```
+// Button.stories.ts
+import { generateArgTypes } from "@tailwind-styled/storybook-addon"
+export default {
+  title: "Components/Button",
+  component: Button,
+  argTypes: generateArgTypes(Button),
+}
+```
 
-2. **Version bump**:
-   ```bash
-   npm install @tailwind-styled/plugin@5.0.0
-   ```
+## Testing Integration
 
-## Lisensi
+```ts
+// vitest.config.ts
+export default defineConfig({
+  test: { setupFiles: ["@tailwind-styled/testing/setup"] }
+})
 
-MIT
+// Button.test.ts
+import { tailwindMatchers, expectClasses } from "@tailwind-styled/testing"
+expect.extend(tailwindMatchers)
+
+test("Button primary", () => {
+  const { container } = render(<Button intent="primary" />)
+  expect(container.firstChild).toHaveClasses(["bg-blue-600", "text-white"])
+})
+```

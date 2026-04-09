@@ -1,24 +1,25 @@
 import fs from "node:fs"
 import { createRequire } from "node:module"
-import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { TwError } from "./errors"
 
 export type PlatformExtension = ".node" | ".dll" | ".dylib" | ".so"
 
+/**
+ * Returns the file extension for the native binding on the current platform.
+ *
+ * Node.js native addons always use `.node` regardless of OS — this is the
+ * extension required by `require()` / `createRequire()`. `.dylib` and `.so`
+ * are shared-library extensions used by non-Node runtimes (e.g. direct C FFI).
+ *
+ * FIX: Linux was incorrectly returning ".so" which caused native binding
+ * resolution to always fail on Linux/CI environments.
+ */
 export function getPlatformExtension(): PlatformExtension {
-  const platform = os.platform()
-  switch (platform) {
-    case "win32":
-      return ".node"
-    case "darwin":
-      return ".dylib"
-    case "linux":
-      return ".so"
-    default:
-      return ".node"
-  }
+  // Node.js native addons (.node) work across all platforms.
+  // Only return platform-specific extensions when targeting non-Node runtimes.
+  return ".node"
 }
 
 export interface NativeBindingLoadError {
@@ -88,9 +89,12 @@ export function resolveNativeBindingCandidates(
     const ext = options.platformExtension ?? getPlatformExtension()
     const defaultBindingName = `tailwind_styled_parser${ext}`
 
-    out.push(path.resolve(process.cwd(), "native", defaultBindingName))
-    out.push(path.resolve(options.runtimeDir, "..", "..", "..", "native", defaultBindingName))
+    // FIX: Prioritize up4 (packages/<n>/src paths) before up3 (packages/<n>/dist paths),
+    // consistent with index.ts. This ensures src-based runtimeDir resolves correctly
+    // in development/monorepo setups.
     out.push(path.resolve(options.runtimeDir, "..", "..", "..", "..", "native", defaultBindingName))
+    out.push(path.resolve(options.runtimeDir, "..", "..", "..", "native", defaultBindingName))
+    out.push(path.resolve(process.cwd(), "native", defaultBindingName))
   }
 
   return Array.from(new Set(out))

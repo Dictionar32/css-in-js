@@ -1,6 +1,7 @@
 {
   "name": "tailwind-styled-vscode",
   "version": "5.0.4",
+  "license": "MIT",
   "displayName": "Tailwind Styled VS Code",
   "description": "VS Code extension for Tailwind Styled - trace, doctor, and why commands",
   "publisher": "tailwind-styled",

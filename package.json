@@ -36,7 +36,9 @@
     "url": "git+https://github.com/Dictionar32/tailwind-styled-v4.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/domain/*",
+    "packages/infrastructure/*",
+    "packages/presentation/*"
   ],
   "bugs": {
     "url": "https://github.com/Dictionar32/tailwind-styled-v4/issues"
