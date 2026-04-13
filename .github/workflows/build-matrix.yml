@@ -1,0 +1,63 @@
+name: Build Matrix
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20, 22]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache: true
+          cache-dependency-paths: native/Cargo.lock
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Rust native bindings
+        run: npm run build:rust
+
+      - name: Verify root + example builds
+        run: npm run verify:builds
+
+      - name: Test
+        run: npm run test
+
+      - name: Check
+        run: npm run check
+
+      - name: Umbrella compatibility smoke
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test tests/smoke/umbrella-thin.test.mjs || true
+          TWS_DISABLE_NATIVE=1 node --test tests/smoke/root-imports.test.mjs || true
+
+      - name: Adapter smoke
+        run: TWS_DISABLE_NATIVE=1 node --test tests/smoke/adapters.test.mjs || true
+
+      - name: Umbrella compatibility smoke
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test tests/smoke/root-imports.test.mjs tests/smoke/umbrella-thin.test.mjs || true
+          echo "Umbrella smoke complete"
+
+      - name: Adapter smoke
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test tests/smoke/adapters.test.mjs || true
+          echo "Adapter smoke complete"

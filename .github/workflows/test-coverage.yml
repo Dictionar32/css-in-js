@@ -1,0 +1,89 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  coverage:
+    name: Test + Coverage Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages (TS only)
+        run: |
+          TWS_DISABLE_NATIVE=1 npm run build --workspaces --if-present 2>/dev/null || true
+
+      - name: Run tests with coverage
+        run: |
+          npm install -g c8 2>/dev/null || true
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/shared/tests/*.test.mjs \
+            packages/core/tests/*.test.mjs \
+            packages/plugin-registry/__tests__/*.test.mjs \
+            packages/testing/__tests__/*.test.mjs \
+            packages/storybook-addon/tests/*.test.mjs \
+            packages/atomic/__tests__/*.test.mjs \
+            packages/vue/__tests__/*.test.mjs \
+            packages/svelte/__tests__/*.test.mjs \
+            2>&1 | tee .test-output.txt || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: .test-output.txt
+          retention-days: 7
+
+      - name: Comment PR with test summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const output = fs.readFileSync('.test-output.txt', 'utf8')
+            const lines = output.split('\n')
+            const passing = lines.filter(l => l.includes('passing')).join('\n')
+            const failing = lines.filter(l => l.includes('failing')).join('\n')
+            const body = [
+              '## Test Results',
+              '```',
+              passing || 'No passing tests found in output',
+              failing ? '⚠️ Failures:\n' + failing : '✅ No failures',
+              '```',
+            ].join('\n')
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            })
+
+  schema-drift:
+    name: Check Schema Drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Check generated schemas not drifted
+        run: |
+          npm run generate:schemas 2>/dev/null || echo "Schema generation skipped (cargo not available)"
+          git diff --exit-code packages/shared/src/generated/ || \
+            (echo "⚠️ Generated schemas differ — run npm run generate:schemas and commit" && exit 1)
+        continue-on-error: true

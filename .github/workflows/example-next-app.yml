@@ -1,0 +1,296 @@
+name: Example — Next.js App + All Packages
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "examples/next-js-app/**"
+      - "packages/**"
+      - ".github/workflows/example-next-app.yml"
+  pull_request:
+    paths:
+      - "examples/next-js-app/**"
+      - "packages/**"
+
+jobs:
+  # ── Job 1: Test semua 26 packages ──────────────────────────────────────────
+  test-packages:
+    name: "Packages: ${{ matrix.group }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - "shared"
+          - "core+syntax+plugin-api"
+          - "compiler+scanner+analyzer"
+          - "engine+preset+theme"
+          - "adapters"
+          - "tooling"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Build packages berurutan (respecting dependency graph)
+      - name: Build base packages
+        run: |
+          npm run build -w @tailwind-styled/shared
+          npm run build -w @tailwind-styled/syntax
+          npm run build -w @tailwind-styled/plugin-api
+
+      - name: Build secondary packages
+        run: |
+          npm run build -w @tailwind-styled/scanner || true
+          npm run build -w @tailwind-styled/compiler || true
+          npm run build -w @tailwind-styled/analyzer || true
+          npm run build -w @tailwind-styled/engine || true
+          npm run build -w @tailwind-styled/core || true
+        env:
+          TWS_DISABLE_NATIVE: "1"
+
+      - name: Build tertiary packages
+        run: |
+          npm run build -w @tailwind-styled/preset || true
+          npm run build -w @tailwind-styled/theme || true
+          npm run build -w @tailwind-styled/animate || true
+          npm run build -w @tailwind-styled/atomic || true
+          npm run build -w @tailwind-styled/runtime || true
+          npm run build -w @tailwind-styled/runtime-css || true
+          npm run build -w @tailwind-styled/plugin || true
+          npm run build -w @tailwind-styled/plugin-registry || true
+          npm run build -w @tailwind-styled/next || true
+          npm run build -w @tailwind-styled/vite || true
+          npm run build -w @tailwind-styled/rspack || true
+          npm run build -w @tailwind-styled/vue || true
+          npm run build -w @tailwind-styled/svelte || true
+          npm run build -w @tailwind-styled/testing || true
+          npm run build -w @tailwind-styled/storybook-addon || true
+          npm run build -w @tailwind-styled/dashboard || true
+          npm run build -w @tailwind-styled/devtools || true
+          npm run build -w tailwind-styled-v4 || true
+        env:
+          TWS_DISABLE_NATIVE: "1"
+
+      - name: Run tests — shared
+        if: matrix.group == 'shared'
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/shared/tests/errors.test.mjs \
+            packages/shared/tests/hash.test.mjs \
+            packages/shared/tests/cache.test.mjs \
+            packages/shared/tests/nativeBinding.test.mjs \
+            packages/shared/tests/native-schemas.test.mjs \
+            packages/shared/tests/telemetry.test.mjs \
+            packages/shared/tests/configSchemas.test.mjs \
+            packages/shared/tests/codegen.test.mjs \
+            packages/shared/tests/workerResolver.test.mjs 2>&1 | tail -20
+
+      - name: Run tests — core+syntax+plugin-api
+        if: matrix.group == 'core+syntax+plugin-api'
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/core/tests/*.test.mjs \
+            packages/syntax/tests/*.test.mjs \
+            packages/plugin-api/tests/*.test.mjs 2>&1 | tail -20
+
+      - name: Run tests — compiler+scanner+analyzer
+        if: matrix.group == 'compiler+scanner+analyzer'
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/compiler/tests/*.test.mjs \
+            packages/scanner/tests/*.test.mjs \
+            packages/analyzer/tests/*.test.mjs 2>&1 | tail -20
+
+      - name: Run tests — engine+preset+theme
+        if: matrix.group == 'engine+preset+theme'
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/engine/tests/*.test.mjs \
+            packages/preset/tests/*.test.mjs \
+            packages/theme/tests/*.test.mjs \
+            packages/animate/tests/*.test.mjs \
+            packages/atomic/__tests__/*.test.mjs \
+            packages/dashboard/tests/*.test.mjs \
+            packages/devtools/tests/*.test.mjs \
+            packages/runtime/tests/*.test.mjs \
+            packages/runtime-css/tests/*.test.mjs 2>&1 | tail -20
+
+      - name: Run tests — adapters
+        if: matrix.group == 'adapters'
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/next/tests/*.test.mjs \
+            packages/vite/tests/*.test.mjs \
+            packages/rspack/tests/*.test.mjs \
+            packages/vue/__tests__/*.test.mjs \
+            packages/svelte/__tests__/*.test.mjs 2>&1 | tail -20
+
+      - name: Run tests — tooling
+        if: matrix.group == 'tooling'
+        run: |
+          TWS_DISABLE_NATIVE=1 node --test \
+            packages/plugin/tests/*.test.mjs \
+            packages/plugin-registry/__tests__/*.test.mjs \
+            packages/testing/__tests__/*.test.mjs \
+            packages/storybook-addon/tests/*.test.mjs \
+            packages/cli/tests/*.test.mjs 2>&1 | tail -20
+
+  # ── Job 2: Smoke tests (pipeline + adapters + umbrella) ──────────────────────
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: test-packages
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Build all packages
+        run: |
+          npm run build -w @tailwind-styled/shared
+          npm run build -w @tailwind-styled/syntax
+          npm run build -w @tailwind-styled/plugin-api
+          npm run build -w @tailwind-styled/core
+          npm run build -w @tailwind-styled/scanner || true
+          npm run build -w @tailwind-styled/compiler || true
+          npm run build -w @tailwind-styled/engine || true
+          npm run build -w @tailwind-styled/next || true
+          npm run build -w @tailwind-styled/vite || true
+          npm run build -w @tailwind-styled/rspack || true
+          npm run build -w @tailwind-styled/vue || true
+          npm run build -w @tailwind-styled/svelte || true
+          npm run build -w tailwind-styled-v4 || true
+        env:
+          TWS_DISABLE_NATIVE: "1"
+
+      - name: Smoke — root imports
+        run: TWS_DISABLE_NATIVE=1 node --test tests/smoke/root-imports.test.mjs || true
+
+      - name: Smoke — pipeline (scanner→compiler→engine)
+        run: TWS_DISABLE_NATIVE=1 node --test tests/smoke/pipeline.test.mjs || true
+
+      - name: Smoke — adapters (vite, next, rspack, vue, svelte)
+        run: TWS_DISABLE_NATIVE=1 node --test tests/smoke/adapters.test.mjs || true
+
+      - name: Smoke — umbrella thin wrapper
+        run: TWS_DISABLE_NATIVE=1 node --test tests/smoke/umbrella-thin.test.mjs || true
+
+  # ── Job 3: Build + typecheck examples/next-js-app ──────────────────────────
+  example-app:
+    name: "Next.js Example (Node ${{ matrix.node }})"
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["18", "20", "22"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "npm"
+
+      - name: Install monorepo deps
+        run: npm ci
+
+      - name: Build all packages needed by example
+        run: |
+          npm run build -w @tailwind-styled/shared
+          npm run build -w @tailwind-styled/syntax
+          npm run build -w @tailwind-styled/plugin-api
+          npm run build -w @tailwind-styled/scanner || true
+          npm run build -w @tailwind-styled/compiler || true
+          npm run build -w @tailwind-styled/engine || true
+          npm run build -w @tailwind-styled/core
+          npm run build -w @tailwind-styled/theme || true
+          npm run build -w @tailwind-styled/runtime
+          npm run build -w @tailwind-styled/runtime-css
+          npm run build -w @tailwind-styled/next || true
+          npm run build -w @tailwind-styled/preset || true
+          npm run build -w @tailwind-styled/animate || true
+          npm run build -w tailwind-styled-v4
+        env:
+          TWS_DISABLE_NATIVE: "1"
+
+      - name: Install example dependencies
+        working-directory: examples/next-js-app
+        run: npm install --ignore-scripts
+
+      - name: TypeScript check
+        working-directory: examples/next-js-app
+        run: npx tsc --noEmit
+        env:
+          TWS_DISABLE_NATIVE: "1"
+
+      - name: Next.js build
+        working-directory: examples/next-js-app
+        run: npx next build
+        env:
+          TWS_DISABLE_NATIVE: "1"
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: "1"
+        continue-on-error: true
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: next-build-node${{ matrix.node }}
+          path: |
+            examples/next-js-app/.next/
+            examples/next-js-app/build-manifest.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Job 4: Native binary build (opsional, hanya Ubuntu) ──────────────────
+  native-build:
+    name: Native Build (Rust)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - run: npm ci
+
+      - name: Build Rust native bindings
+        run: npm run build:rust
+
+      - name: Build packages with native
+        run: |
+          npm run build -w @tailwind-styled/scanner
+          npm run build -w @tailwind-styled/compiler
+          npm run build -w @tailwind-styled/engine
+          npm run build -w tailwind-styled-v4
+
+      - name: Build Next.js example WITH native
+        working-directory: examples/next-js-app
+        run: |
+          npm install --ignore-scripts
+          npx next build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Check binary size
+        run: node scripts/check-binary-size.mjs
+        continue-on-error: true

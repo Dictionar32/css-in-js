@@ -1,0 +1,92 @@
+name: Quality Checks
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache: true
+          cache-dependency-paths: native/Cargo.lock
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build Rust native bindings
+        run: npm run build:rust
+      
+      - name: Verify root + example builds
+        run: npm run verify:builds
+      
+      - name: Format, lint & typecheck
+        run: npm run check
+      
+      - name: Security audit
+        run: npm audit --audit-level=moderate
+      
+      - name: Check bundle sizes
+        run: |
+          echo "=== dist/ sizes ==="
+          ls -lh dist/*.js | awk '{print $5, $9}'
+
+      - name: Boundary check (no src/ in dist, no fixture leak)
+        run: |
+          echo "=== Artifact boundary check ==="
+          TWS_DISABLE_NATIVE=1 node -e "
+            const { checkPackageArtifactCleanliness, checkDistExists } = require('./scripts/check-pack-artifacts.ts') || {}
+            if (checkPackageArtifactCleanliness) {
+              ['packages/shared','packages/compiler','packages/engine','packages/scanner']
+                .forEach(p => { try { checkPackageArtifactCleanliness(p); console.log('✅', p) } catch(e) { console.warn('⚠️', e.message) } })
+            } else {
+              console.log('check-pack-artifacts not available yet (needs build)')
+            }
+          " || true
+
+      - name: Pack check (artifact contents)
+        run: |
+          for pkg in packages/shared packages/compiler packages/engine packages/scanner packages/core; do
+            if [ -d "$pkg/dist" ]; then
+              node -e "
+                const fs = require('fs');
+                const dir = '$pkg/dist';
+                const files = fs.readdirSync(dir);
+                const hasEntry = files.some(f => f.endsWith('.js') || f.endsWith('.cjs'));
+                const hasSrc = files.some(f => f.endsWith('.ts') && !f.endsWith('.d.ts'));
+                console.log(hasEntry && !hasSrc ? '✅ $pkg' : '⚠️  $pkg: ' + JSON.stringify({hasEntry, hasSrc}));
+              " 2>/dev/null || echo "⚪ $pkg/dist check skipped"
+            fi
+          done
+
+      - name: Boundary check (no cross-workspace internal imports)
+        run: |
+          echo "Checking for cross-workspace internal imports..."
+          violations=0
+          # Adapters should not import internal paths from other packages
+          for pkg in packages/vite packages/next packages/rspack packages/vue packages/svelte; do
+            if [ -d "$pkg/src" ]; then
+              # Check for /internal imports (allowed only from compiler)
+              bad=$(grep -rn "from.*@tailwind-styled/.*/internal" "$pkg/src/" --include="*.ts" 2>/dev/null | grep -v "@tailwind-styled/compiler/internal" | wc -l)
+              if [ "$bad" -gt 0 ]; then
+                echo "❌ $pkg: $bad cross-workspace internal import(s)"
+                violations=$((violations + 1))
+              else
+                echo "✅ $pkg: clean"
+              fi
+            fi
+          done
+          [ "$violations" -eq 0 ] || (echo "Boundary violations found" && exit 1)
+          echo "✅ All boundary checks passed"

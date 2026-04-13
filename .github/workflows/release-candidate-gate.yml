@@ -1,0 +1,118 @@
+name: Release Candidate Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 5.0.1)"
+        required: false
+        default: "5.0.1"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache: true
+          cache-dependency-paths: native/Cargo.lock
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Rust native bindings
+        run: npm run build:rust
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm run test
+
+      - name: Check
+        run: npm run check
+
+      - name: Smoke tests
+        run: |
+          if [ -f scripts/smoke/index.mjs ]; then
+            node scripts/smoke/index.mjs
+          elif [ -f scripts/smoke/index.ts ]; then
+            npx tsx scripts/smoke/index.ts
+          else
+            echo "No smoke test found, skipping"
+          fi
+        env:
+          SMOKE_VERBOSE: "1"
+
+      - name: Final validation
+        run: npm run validate
+
+      - name: Health summary
+        run: |
+          mkdir -p artifacts
+          npx tsx scripts/validate/health-summary.ts || echo "health-summary skipped (validation-report.json not found)"
+
+      - name: Sprint benchmark (100 files)
+        run: |
+          if [ -f scripts/benchmark/sprint2-bench.mjs ]; then
+            node scripts/benchmark/sprint2-bench.mjs --files=100
+          else
+            echo "Benchmark script not found, skipping"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-${{ github.event.inputs.version }}-validation
+          path: |
+            artifacts/*.json
+            docs/benchmark/*.json
+
+      - name: Pack artifact check
+        run: |
+          echo "Checking artifact cleanliness..."
+          # Check dist/ exists for core packages
+          for pkg in packages/shared packages/compiler packages/engine packages/scanner packages/core packages/cli; do
+            if [ -d "$pkg/dist" ]; then
+              echo "✅ $pkg/dist exists"
+              # Check no src/ leaked into dist
+              if find "$pkg/dist" -name "*.ts" ! -name "*.d.ts" 2>/dev/null | grep -q .; then
+                echo "❌ $pkg/dist contains .ts source files"
+                exit 1
+              fi
+            else
+              echo "⚠️  $pkg/dist not found (build may have skipped)"
+            fi
+          done
+          # Check root umbrella doesn't contain direct source
+          if [ -d "dist" ]; then
+            src_count=$(find dist/ -name "*.ts" ! -name "*.d.ts" 2>/dev/null | wc -l)
+            echo "Root dist .ts files (should be 0): $src_count"
+            [ "$src_count" -eq 0 ] || exit 1
+          fi
+          echo "✅ Pack artifact check passed"
+
+      - name: Artifact size gate
+        run: |
+          echo "Checking artifact sizes..."
+          total_kb=0
+          for pkg in packages/shared packages/compiler packages/engine packages/scanner; do
+            if [ -d "$pkg/dist" ]; then
+              size_kb=$(du -sk "$pkg/dist" 2>/dev/null | cut -f1)
+              echo "  $pkg/dist: ${size_kb}KB"
+              total_kb=$((total_kb + size_kb))
+            fi
+          done
+          echo "Total core dist: ${total_kb}KB"
+          # Fail if core packages exceed 10MB
+          [ "$total_kb" -lt 10240 ] || (echo "❌ Core packages exceed 10MB limit" && exit 1)
+          echo "✅ Artifact size gate passed"

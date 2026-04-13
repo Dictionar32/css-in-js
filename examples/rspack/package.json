@@ -1,0 +1,18 @@
+{
+  "name": "example-rspack",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "rspack serve",
+    "build": "rspack build",
+    "test": "npm install --ignore-scripts && npx rspack build"
+  },
+  "dependencies": {
+    "tailwind-styled-v4": "file:../.."
+  },
+  "devDependencies": {
+    "@rspack/cli": "^1.0.0",
+    "@rspack/core": "^1.0.0",
+    "typescript": "^6"
+  }
+}

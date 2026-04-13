@@ -1,0 +1,6 @@
+# Direktori ini berisi output dari validation gate.
+# File-file di sini di-generate oleh:
+#   npm run validate        → artifacts/validation-report.json
+#   npm run health:summary  → artifacts/health-summary.json
+#
+# Tidak perlu di-commit (sudah di .gitignore)

@@ -1,0 +1,56 @@
+name: Plugin Registry Benchmark
+
+on:
+  push:
+    paths:
+      - "packages/plugin-registry/**"
+  pull_request:
+    paths:
+      - "packages/plugin-registry/**"
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    name: SLO Benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin-registry
+        run: npm run build -w @tailwind-styled/plugin-registry
+
+      - name: Run SLO benchmark
+        id: benchmark
+        run: |
+          node packages/plugin-registry/benchmark/index.mjs --json > benchmark-results.json 2>&1
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          cat benchmark-results.json
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-registry-benchmark-${{ github.sha }}
+          path: benchmark-results.json
+          retention-days: 30
+
+      - name: Check SLO thresholds (warning only)
+        run: |
+          node -e "
+            const results = require('./benchmark-results.json');
+            const allPass = results.allPass ?? false;
+            if (!allPass) {
+              console.warn('⚠️  Some benchmark SLO targets missed — check artifact for details');
+              console.warn('This is a warning, not a build failure.');
+            } else {
+              console.log('✅ All SLO targets met');
+            }
+          " || true

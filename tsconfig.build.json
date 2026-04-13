@@ -1,0 +1,46 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "outDir": ".build-cache"
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.mjs",
+    "**/__tests__/**",
+    "packages/_experiments",
+    "examples",
+    "scripts",
+    "test/fixtures"
+  ],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/syntax" },
+    { "path": "./packages/plugin-api" },
+    { "path": "./packages/scanner" },
+    { "path": "./packages/analyzer" },
+    { "path": "./packages/compiler" },
+    { "path": "./packages/engine" },
+    { "path": "./packages/theme" },
+    { "path": "./packages/runtime" },
+    { "path": "./packages/runtime-css" },
+    { "path": "./packages/animate" },
+    { "path": "./packages/atomic" },
+    { "path": "./packages/plugin" },
+    { "path": "./packages/preset" },
+    { "path": "./packages/core" },
+    { "path": "./packages/next" },
+    { "path": "./packages/vite" },
+    { "path": "./packages/rspack" },
+    { "path": "./packages/vue" },
+    { "path": "./packages/svelte" },
+    { "path": "./packages/devtools" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/plugin-registry" }
+  ]
+}
